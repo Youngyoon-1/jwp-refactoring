@@ -1,8 +1,10 @@
 package kitchenpos.support.fixture;
 
 import java.math.BigDecimal;
+import java.util.List;
 import kitchenpos.domain.Menu;
 import kitchenpos.domain.MenuGroup;
+import kitchenpos.domain.MenuProduct;
 
 public enum MenuFixture {
 
@@ -19,10 +21,29 @@ public enum MenuFixture {
     }
 
     public Menu 생성(final MenuGroup menuGroup) {
+        return 생성(null, menuGroup, this.price, null);
+    }
+
+    public Menu 생성(final Long id, final MenuGroup menuGroup) {
+        return 생성(id, menuGroup, this.price, null);
+    }
+
+    public Menu 생성(final MenuGroup menuGroup, final List<MenuProduct> menuProducts) {
+        return 생성(null, menuGroup, this.price, menuProducts);
+    }
+
+    public Menu 생성(final MenuGroup menuGroup, final BigDecimal price) {
+        return 생성(null, menuGroup, price, null);
+    }
+
+    public Menu 생성(final Long id, final MenuGroup menuGroup, final BigDecimal price,
+                   final List<MenuProduct> menuProducts) {
         final Menu menu = new Menu();
+        menu.setId(id);
         menu.setName(this.name);
-        menu.setPrice(this.price);
+        menu.setPrice(price);
         menu.setMenuGroupId(menuGroup.getId());
+        menu.setMenuProducts(menuProducts);
 
         return menu;
     }

@@ -1,8 +1,7 @@
 package kitchenpos.dao;
 
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE_1;
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE_2;
-import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP_1;
+import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
+import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
@@ -10,6 +9,7 @@ import java.util.List;
 import javax.sql.DataSource;
 import kitchenpos.domain.OrderTable;
 import kitchenpos.domain.TableGroup;
+import kitchenpos.support.fixture.OrderTableFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -29,7 +29,7 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 새로운_주문_테이블을_저장한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성();
+        OrderTable orderTable = ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성();
 
         // when
         OrderTable savedOrderTable = jdbcTemplateOrderTableDao.save(orderTable);
@@ -41,8 +41,8 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 저장된_주문_테이블의_테이블_그룹과_손님_수와_빈자리_여부를_수정한다() {
         // given
-        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP_1.생성());
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹과_생성(savedTableGroup));
+        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성());
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
         savedOrderTable.setEmpty(true);
         savedOrderTable.setNumberOfGuests(0);
         savedOrderTable.setTableGroupId(null);
@@ -57,7 +57,7 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 주문_테이블을_ID_로_조회한다() {
         // given
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
         long id = savedOrderTable.getId();
 
         // when
@@ -71,8 +71,8 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 주문_테이블_전체를_조회한다() {
         //given
-        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        OrderTable savedOrderTable2 = 주문_테이블_저장(ORDER_TABLE_2.손님_한_명_테이블_그룹_없이_생성());
+        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        OrderTable savedOrderTable2 = 주문_테이블_저장(OrderTableFixture.ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
         List<OrderTable> savedOrderTables = new ArrayList<>();
         savedOrderTables.add(savedOrderTable1);
         savedOrderTables.add(savedOrderTable2);
@@ -88,8 +88,8 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 주문_테이블을_N_개의_ID_로_조회한다() {
         // given
-        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        OrderTable savedOrderTable2 = 주문_테이블_저장(ORDER_TABLE_2.손님_한_명_테이블_그룹_없이_생성());
+        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        OrderTable savedOrderTable2 = 주문_테이블_저장(OrderTableFixture.ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
         List<OrderTable> savedOrderTables = new ArrayList<>();
         savedOrderTables.add(savedOrderTable1);
         savedOrderTables.add(savedOrderTable2);
@@ -108,9 +108,9 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 주문_테이블을_테이블_그룹_ID_로_조회한다() {
         // given
-        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP_1.생성());
-        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹과_생성(savedTableGroup));
-        OrderTable savedOrderTable2 = 주문_테이블_저장(ORDER_TABLE_2.손님_한_명_테이블_그룹과_생성(savedTableGroup));
+        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성());
+        OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
+        OrderTable savedOrderTable2 = 주문_테이블_저장(OrderTableFixture.ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
         List<OrderTable> savedOrderTables = new ArrayList<>();
         savedOrderTables.add(savedOrderTable1);
         savedOrderTables.add(savedOrderTable2);

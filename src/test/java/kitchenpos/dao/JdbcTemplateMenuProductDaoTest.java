@@ -2,8 +2,7 @@ package kitchenpos.dao;
 
 import static kitchenpos.support.fixture.MenuFixture.MENU_1;
 import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
-import static kitchenpos.support.fixture.MenuProductFixture.MENU_PRODUCT_1;
-import static kitchenpos.support.fixture.MenuProductFixture.MENU_PRODUCT_2;
+import static kitchenpos.support.fixture.MenuProductFixture.MENU_PRODUCT;
 import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,6 +13,7 @@ import kitchenpos.domain.Menu;
 import kitchenpos.domain.MenuGroup;
 import kitchenpos.domain.MenuProduct;
 import kitchenpos.domain.Product;
+import kitchenpos.support.fixture.MenuProductFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -40,7 +40,7 @@ class JdbcTemplateMenuProductDaoTest {
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         Product savedProduct = 제품_저장(PRODUCT_1.생성());
-        MenuProduct menuProduct = MENU_PRODUCT_1.생성(savedMenu, savedProduct);
+        MenuProduct menuProduct = MENU_PRODUCT.생성(savedMenu, savedProduct);
 
         // when
         MenuProduct savedMenuProduct = jdbcTemplateMenuProductDao.save(menuProduct);
@@ -55,7 +55,7 @@ class JdbcTemplateMenuProductDaoTest {
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         Product savedProduct = 제품_저장(PRODUCT_1.생성());
-        MenuProduct savedMenuProduct = 메뉴_제품_저장(MENU_PRODUCT_1.생성(savedMenu, savedProduct));
+        MenuProduct savedMenuProduct = 메뉴_제품_저장(MENU_PRODUCT.생성(savedMenu, savedProduct));
         long id = savedMenuProduct.getSeq();
 
         // when
@@ -72,8 +72,8 @@ class JdbcTemplateMenuProductDaoTest {
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         Product savedProduct = 제품_저장(PRODUCT_1.생성());
-        MenuProduct savedMenuProduct1 = 메뉴_제품_저장(MENU_PRODUCT_1.생성(savedMenu, savedProduct));
-        MenuProduct savedMenuProduct2 = 메뉴_제품_저장(MENU_PRODUCT_2.생성(savedMenu, savedProduct));
+        MenuProduct savedMenuProduct1 = 메뉴_제품_저장(MENU_PRODUCT.생성(savedMenu, savedProduct));
+        MenuProduct savedMenuProduct2 = 메뉴_제품_저장(MenuProductFixture.MENU_PRODUCT.생성(savedMenu, savedProduct));
         List<MenuProduct> savedMenuProducts = new ArrayList<>();
         savedMenuProducts.add(savedMenuProduct1);
         savedMenuProducts.add(savedMenuProduct2);
@@ -92,8 +92,8 @@ class JdbcTemplateMenuProductDaoTest {
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         Product savedProduct = 제품_저장(PRODUCT_1.생성());
-        MenuProduct savedMenuProduct1 = 메뉴_제품_저장(MENU_PRODUCT_1.생성(savedMenu, savedProduct));
-        MenuProduct savedMenuProduct2 = 메뉴_제품_저장(MENU_PRODUCT_2.생성(savedMenu, savedProduct));
+        MenuProduct savedMenuProduct1 = 메뉴_제품_저장(MENU_PRODUCT.생성(savedMenu, savedProduct));
+        MenuProduct savedMenuProduct2 = 메뉴_제품_저장(MenuProductFixture.MENU_PRODUCT.생성(savedMenu, savedProduct));
         List<MenuProduct> savedMenuProducts = new ArrayList<>();
         savedMenuProducts.add(savedMenuProduct1);
         savedMenuProducts.add(savedMenuProduct2);

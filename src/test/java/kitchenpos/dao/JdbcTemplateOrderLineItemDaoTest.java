@@ -2,10 +2,10 @@ package kitchenpos.dao;
 
 import static kitchenpos.support.fixture.MenuFixture.MENU_1;
 import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
-import static kitchenpos.support.fixture.OrderFixture.ORDER_1;
+import static kitchenpos.support.fixture.OrderFixture.ORDER;
 import static kitchenpos.support.fixture.OrderLineItemFixture.ORDER_LINE_ITEM_1;
 import static kitchenpos.support.fixture.OrderLineItemFixture.ORDER_LINE_ITEM_2;
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE_1;
+import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
@@ -41,8 +41,8 @@ class JdbcTemplateOrderLineItemDaoTest {
     @Test
     void 주문_항목을_저장한다() {
         // given
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        Order savedOrder = 주문_저장(ORDER_1.조리_상태로_생성(savedOrderTable));
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        Order savedOrder = 주문_저장(ORDER.조리_상태로_생성(savedOrderTable));
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         OrderLineItem orderLineItem = ORDER_LINE_ITEM_1.생성(savedOrder, savedMenu);
@@ -57,8 +57,8 @@ class JdbcTemplateOrderLineItemDaoTest {
     @Test
     void 주문_항목을_ID_로_조회한다() {
         // given
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        Order savedOrder = 주문_저장(ORDER_1.조리_상태로_생성(savedOrderTable));
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        Order savedOrder = 주문_저장(ORDER.조리_상태로_생성(savedOrderTable));
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         OrderLineItem savedOrderLineItem = 주문_항목_저장(ORDER_LINE_ITEM_1.생성(savedOrder, savedMenu));
@@ -75,8 +75,8 @@ class JdbcTemplateOrderLineItemDaoTest {
     @Test
     void 주문_항목_전체를_조회한다() {
         // given
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        Order savedOrder = 주문_저장(ORDER_1.조리_상태로_생성(savedOrderTable));
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        Order savedOrder = 주문_저장(ORDER.조리_상태로_생성(savedOrderTable));
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         OrderLineItem savedOrderLineItem1 = 주문_항목_저장(ORDER_LINE_ITEM_1.생성(savedOrder, savedMenu));
@@ -97,8 +97,8 @@ class JdbcTemplateOrderLineItemDaoTest {
     @Test
     void 주문_항목을_주문_ID_로_조회한다() {
         // given
-        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE_1.손님_한_명_테이블_그룹_없이_생성());
-        Order savedOrder = 주문_저장(ORDER_1.조리_상태로_생성(savedOrderTable));
+        OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹_없이_생성());
+        Order savedOrder = 주문_저장(ORDER.조리_상태로_생성(savedOrderTable));
         MenuGroup savedMenuGroup = 메뉴_그룹_저장(MENU_GROUP_1.생성());
         Menu savedMenu = 메뉴_저장(MENU_1.생성(savedMenuGroup));
         OrderLineItem savedOrderLineItem1 = 주문_항목_저장(ORDER_LINE_ITEM_1.생성(savedOrder, savedMenu));

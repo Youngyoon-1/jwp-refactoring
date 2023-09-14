@@ -18,9 +18,22 @@ public enum ProductFixture {
     }
 
     public Product 생성() {
+        return 생성(null, this.price);
+    }
+
+    public Product 생성(final Long id) {
+        return 생성(id, this.price);
+    }
+
+    public Product 생성(final BigDecimal price) {
+        return 생성(null, price);
+    }
+
+    public Product 생성(final Long id, final BigDecimal price) {
         final Product product = new Product();
+        product.setId(id);
         product.setName(this.name);
-        product.setPrice(this.price);
+        product.setPrice(price);
 
         return product;
     }

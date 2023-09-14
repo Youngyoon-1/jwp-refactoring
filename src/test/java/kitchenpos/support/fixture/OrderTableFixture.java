@@ -5,17 +5,8 @@ import kitchenpos.domain.TableGroup;
 
 public enum OrderTableFixture {
 
-    ORDER_TABLE_1,
-    ORDER_TABLE_2,
+    ORDER_TABLE,
     ;
-
-//    private final int numberOfGuests;
-//    private final boolean empty;
-//
-//    OrderTableFixture(final int numberOfGuests, final boolean empty) {
-//        this.numberOfGuests = numberOfGuests;
-//        this.empty = empty;
-//    }
 
     public OrderTable 손님_한_명_테이블_그룹_없이_생성() {
         final OrderTable orderTable = new OrderTable();
@@ -31,6 +22,43 @@ public enum OrderTableFixture {
         orderTable.setTableGroupId(tableGroup.getId());
         orderTable.setEmpty(false);
 
+        return orderTable;
+    }
+
+    public OrderTable 생성() {
+        return 생성(null, null, null, null);
+    }
+
+    public OrderTable 생성(final boolean empty) {
+        return 생성(null, null, empty, null);
+    }
+
+    public OrderTable 생성(final int numberOfGuests) {
+        return 생성(null, null, null, numberOfGuests);
+    }
+
+    public OrderTable 생성(final long id, final long tableGroupId) {
+        return 생성(id, tableGroupId, null, null);
+    }
+
+    public OrderTable 생성(final long tableGroupId) {
+        return 생성(null, tableGroupId, null, null);
+    }
+
+    public OrderTable 생성(final long tableGroupId, final boolean empty) {
+        return 생성(null, tableGroupId, empty, null);
+    }
+
+    private OrderTable 생성(final Long id, final Long tableGroupId, final Boolean empty, final Integer numberOfGuests) {
+        final OrderTable orderTable = new OrderTable();
+        orderTable.setId(id);
+        orderTable.setTableGroupId(tableGroupId);
+        if (empty != null) {
+            orderTable.setEmpty(empty);
+        }
+        if (numberOfGuests != null) {
+            orderTable.setNumberOfGuests(numberOfGuests);
+        }
         return orderTable;
     }
 }

@@ -6,8 +6,7 @@ import kitchenpos.domain.Product;
 
 public enum MenuProductFixture {
 
-    MENU_PRODUCT_1(1),
-    MENU_PRODUCT_2(1),
+    MENU_PRODUCT(1),
     ;
 
     private final int quantity;
@@ -16,11 +15,38 @@ public enum MenuProductFixture {
         this.quantity = quantity;
     }
 
+    public MenuProduct 생성(final Product product) {
+        return 생성(null, null, product, this.quantity);
+    }
+
     public MenuProduct 생성(final Menu menu, final Product product) {
+        return 생성(null, menu, product, this.quantity);
+    }
+
+    public MenuProduct 생성(final long id, final Product product) {
+        return 생성(id, null, product, this.quantity);
+    }
+
+    public MenuProduct 생성(final Product product, final int quantity) {
+        return 생성(null, null, product, quantity);
+    }
+
+    public MenuProduct 생성(final Menu menu, final Product product, final int quantity) {
+        return 생성(null, menu, product, quantity);
+    }
+
+    public MenuProduct 생성(final Long id, final Menu menu, final Product product) {
+        return 생성(id, menu, product, this.quantity);
+    }
+
+    public MenuProduct 생성(final Long id, final Menu menu, final Product product, final Integer quantity) {
         final MenuProduct menuProduct = new MenuProduct();
-        menuProduct.setMenuId(menu.getId());
+        menuProduct.setSeq(id);
+        if (menu != null) {
+            menuProduct.setMenuId(menu.getId());
+        }
         menuProduct.setProductId(product.getId());
-        menuProduct.setQuantity(this.quantity);
+        menuProduct.setQuantity(quantity);
 
         return menuProduct;
     }
