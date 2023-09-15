@@ -4,6 +4,7 @@ import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
 import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
@@ -41,7 +42,7 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 저장된_주문_테이블의_테이블_그룹과_손님_수와_빈자리_여부를_수정한다() {
         // given
-        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성());
+        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성(LocalDateTime.now()));
         OrderTable savedOrderTable = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
         savedOrderTable.setEmpty(true);
         savedOrderTable.setNumberOfGuests(0);
@@ -108,7 +109,7 @@ class JdbcTemplateOrderTableDaoTest {
     @Test
     void 주문_테이블을_테이블_그룹_ID_로_조회한다() {
         // given
-        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성());
+        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성(LocalDateTime.now()));
         OrderTable savedOrderTable1 = 주문_테이블_저장(ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
         OrderTable savedOrderTable2 = 주문_테이블_저장(OrderTableFixture.ORDER_TABLE.손님_한_명_테이블_그룹과_생성(savedTableGroup));
         List<OrderTable> savedOrderTables = new ArrayList<>();

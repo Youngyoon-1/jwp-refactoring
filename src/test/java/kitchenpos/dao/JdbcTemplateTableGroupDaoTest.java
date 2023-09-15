@@ -3,11 +3,11 @@ package kitchenpos.dao;
 import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 import kitchenpos.domain.TableGroup;
-import kitchenpos.support.fixture.TableGroupFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -25,7 +25,7 @@ class JdbcTemplateTableGroupDaoTest {
     @Test
     void 테이블_그룹을_저장한다() {
         // given
-        TableGroup tableGroup = TABLE_GROUP.생성();
+        TableGroup tableGroup = TABLE_GROUP.생성(LocalDateTime.now());
 
         // when
         TableGroup savedTableGroup = jdbcTemplateTableGroupDao.save(tableGroup);
@@ -37,7 +37,7 @@ class JdbcTemplateTableGroupDaoTest {
     @Test
     void 테이블_그룹을_ID_로_조회한다() {
         // given
-        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성());
+        TableGroup savedTableGroup = 테이블_그룹_저장(TABLE_GROUP.생성(LocalDateTime.now()));
         long id = savedTableGroup.getId();
 
         // when
@@ -51,8 +51,8 @@ class JdbcTemplateTableGroupDaoTest {
     @Test
     void 테이블_그룹_전체를_조회한다() {
         // given
-        TableGroup savedTableGroup1 = 테이블_그룹_저장(TABLE_GROUP.생성());
-        TableGroup savedTableGroup2 = 테이블_그룹_저장(TableGroupFixture.TABLE_GROUP.생성());
+        TableGroup savedTableGroup1 = 테이블_그룹_저장(TABLE_GROUP.생성(LocalDateTime.now()));
+        TableGroup savedTableGroup2 = 테이블_그룹_저장(TABLE_GROUP.생성(LocalDateTime.now()));
         List<TableGroup> savedTableGroups = new ArrayList<>();
         savedTableGroups.add(savedTableGroup1);
         savedTableGroups.add(savedTableGroup2);

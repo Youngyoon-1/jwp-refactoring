@@ -37,12 +37,12 @@ public enum OrderTableFixture {
         return 생성(null, null, null, numberOfGuests);
     }
 
-    public OrderTable 생성(final long id, final long tableGroupId) {
+    public OrderTable 생성(final Long id, final long tableGroupId) {
         return 생성(id, tableGroupId, null, null);
     }
 
-    public OrderTable 생성(final long tableGroupId) {
-        return 생성(null, tableGroupId, null, null);
+    public OrderTable 생성(final long id) {
+        return 생성(id, null, null, null);
     }
 
     public OrderTable 생성(final long tableGroupId, final boolean empty) {

@@ -11,14 +11,17 @@ public enum TableGroupFixture {
     ;
 
     public TableGroup 생성() {
-        return 생성(null, null, LocalDateTime.now());
+        return 생성(null, null, null);
+    }
+
+    public TableGroup 생성(final LocalDateTime localDateTime) {
+        return 생성(null, null, localDateTime);
     }
 
     public TableGroup 생성(final long id) {
         return 생성(id, null, null);
 
     }
-
 
     public TableGroup 생성(final List<OrderTable> orderTables) {
         return 생성(null, orderTables, null);

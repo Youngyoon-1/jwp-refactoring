@@ -20,6 +20,14 @@ public enum MenuFixture {
         this.price = price;
     }
 
+    public Menu 생성() {
+        return 생성(null, null, null, null);
+    }
+
+    public Menu 생성(final Long id) {
+        return 생성(id, null, null, null);
+    }
+
     public Menu 생성(final MenuGroup menuGroup) {
         return 생성(null, menuGroup, this.price, null);
     }
@@ -42,7 +50,9 @@ public enum MenuFixture {
         menu.setId(id);
         menu.setName(this.name);
         menu.setPrice(price);
-        menu.setMenuGroupId(menuGroup.getId());
+        if (menuGroup != null) {
+            menu.setMenuGroupId(menuGroup.getId());
+        }
         menu.setMenuProducts(menuProducts);
 
         return menu;

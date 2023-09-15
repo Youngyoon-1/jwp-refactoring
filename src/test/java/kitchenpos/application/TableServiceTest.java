@@ -114,7 +114,7 @@ class TableServiceTest {
         long orderTableIdRequest = 1L;
         OrderTable orderTableRequest = ORDER_TABLE.생성();
         long orderTableGroupId = 1L;
-        OrderTable orderTable = ORDER_TABLE.생성(orderTableGroupId);
+        OrderTable orderTable = ORDER_TABLE.생성(null, orderTableGroupId);
         given(orderTableDao.findById(orderTableIdRequest))
                 .willReturn(Optional.of(orderTable));
 
