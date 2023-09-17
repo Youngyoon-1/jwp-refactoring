@@ -20,9 +20,15 @@ public enum OrderLineItemFixture {
         return new OrderLineItem();
     }
 
+    public OrderLineItem 생성(final Menu menu) {
+        return 생성(null, menu);
+    }
+
     public OrderLineItem 생성(final Order order, final Menu menu) {
         final OrderLineItem orderLineItem = new OrderLineItem();
-        orderLineItem.setOrderId(order.getId());
+        if (order != null) {
+            orderLineItem.setOrderId(order.getId());
+        }
         orderLineItem.setMenuId(menu.getId());
         orderLineItem.setQuantity(this.quantity);
 
