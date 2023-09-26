@@ -1,10 +1,25 @@
 package kitchenpos.domain;
 
 public class OrderLineItem {
+
     private Long seq;
     private Long orderId;
     private Long menuId;
     private long quantity;
+
+    public OrderLineItem() {
+    }
+
+    public OrderLineItem(final Long seq, final Long orderId, final long menuId, final long quantity) {
+        this.seq = seq;
+        this.orderId = orderId;
+        this.menuId = menuId;
+        this.quantity = quantity;
+    }
+
+    public static OrderLineItem createToSave(final long menuId, final long quantity) {
+        return new OrderLineItem(null, null, menuId, quantity);
+    }
 
     public Long getSeq() {
         return seq;
@@ -36,5 +51,9 @@ public class OrderLineItem {
 
     public void setQuantity(final long quantity) {
         this.quantity = quantity;
+    }
+
+    public void updateOrderIdByOrder(final Order order) {
+        this.orderId = order.getId();
     }
 }

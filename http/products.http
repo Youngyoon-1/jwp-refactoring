@@ -8,6 +8,6 @@ Content-Type: application/json
 }
 
 ###
-GET {{host}}/api/products
+GET localhost:8080/api/products
 
 ###

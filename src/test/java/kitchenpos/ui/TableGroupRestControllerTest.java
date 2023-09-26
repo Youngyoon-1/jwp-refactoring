@@ -1,10 +1,15 @@
 package kitchenpos.ui;
 
-import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import kitchenpos.application.TableGroupService;
+import kitchenpos.domain.OrderTable;
 import kitchenpos.domain.TableGroup;
+import kitchenpos.dto.request.TableGroupRequest;
+import kitchenpos.dto.response.TableGroupResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,14 +44,17 @@ class TableGroupRestControllerTest extends UiTest {
     @Test
     void 테이블_그룹을_생성한다() throws Exception {
         // given
-        TableGroup tableGroupRequest = TABLE_GROUP.생성();
-        TableGroup tableGroupResponse = TABLE_GROUP.생성(1L);
-        BDDMockito.given(tableGroupService.create(ArgumentMatchers.any(TableGroup.class)))
+        OrderTable savedOrderTable1 = new OrderTable(1L, 1L, 0, false);
+        OrderTable savedOrderTable2 = new OrderTable(2L, 1L, 0, false);
+        List<OrderTable> savedOrderTables = Arrays.asList(savedOrderTable1, savedOrderTable2);
+        TableGroup savedTableGroup = new TableGroup(1L, LocalDateTime.now(), savedOrderTables);
+        TableGroupResponse tableGroupResponse = new TableGroupResponse(savedTableGroup);
+        BDDMockito.given(tableGroupService.create(ArgumentMatchers.any(TableGroupRequest.class)))
                 .willReturn(tableGroupResponse);
 
         // when
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(null);
         String serializedRequestContent = getObjectMapper().writeValueAsString(tableGroupRequest);
-        System.out.println(serializedRequestContent);
         ResultActions resultActions = mockMvc.perform(
                 MockMvcRequestBuilders.post("/api/table-groups")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -63,7 +71,7 @@ class TableGroupRestControllerTest extends UiTest {
                                 MockMvcResultMatchers.content().string(serializedResponseContent)
                         )
                 ),
-                () -> BDDMockito.verify(tableGroupService).create(ArgumentMatchers.any(TableGroup.class))
+                () -> BDDMockito.verify(tableGroupService).create(ArgumentMatchers.any(TableGroupRequest.class))
         );
     }
 

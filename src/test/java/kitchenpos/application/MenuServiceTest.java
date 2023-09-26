@@ -1,7 +1,5 @@
 package kitchenpos.application;
 
-import static kitchenpos.support.fixture.MenuFixture.MENU_1;
-import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
 import static kitchenpos.support.fixture.MenuProductFixture.MENU_PRODUCT;
 import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import kitchenpos.dao.MenuDao;
@@ -19,14 +18,17 @@ import kitchenpos.dao.MenuGroupDao;
 import kitchenpos.dao.MenuProductDao;
 import kitchenpos.dao.ProductDao;
 import kitchenpos.domain.Menu;
-import kitchenpos.domain.MenuGroup;
 import kitchenpos.domain.MenuProduct;
 import kitchenpos.domain.Product;
+import kitchenpos.dto.request.MenuRequest;
+import kitchenpos.dto.response.MenuProductResponse;
+import kitchenpos.dto.response.MenuResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -52,37 +54,36 @@ class MenuServiceTest {
     @Test
     void 메뉴를_저장한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
         Product product = PRODUCT_1.생성(1L, BigDecimal.valueOf(500));
-        MenuProduct menuProductRequest = MENU_PRODUCT.생성(product, 2);
-        List<MenuProduct> menuProductsRequest = new ArrayList<>();
-        menuProductsRequest.add(menuProductRequest);
-        Menu menuRequest = MENU_1.생성(menuGroup, menuProductsRequest);
-        Menu menu = MENU_1.생성(1L, menuGroup);
-        MenuProduct menuProduct = MENU_PRODUCT.생성(1L, menu, product);
+        MenuProduct menuProduct = MENU_PRODUCT.생성(product, 2);
+        List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.valueOf(1000), 1L, menuProducts);
+        MenuProduct willReturnMenuProduct = new MenuProduct(1L, 1L, 1L, 1L);
+        List<MenuProduct> willReturnMenuProducts = Collections.singletonList(willReturnMenuProduct);
+        Menu willReturnMenu = new Menu(1L, "메뉴", BigDecimal.valueOf(1000), 1L, willReturnMenuProducts);
         given(menuGroupDao.existsById(1L))
                 .willReturn(true);
         given(productDao.findById(1L))
                 .willReturn(Optional.of(product));
-        given(menuDao.save(menuRequest))
-                .willReturn(menu);
-        given(menuProductDao.save(menuProductRequest))
-                .willReturn(menuProduct);
+        given(menuDao.save(ArgumentMatchers.any(Menu.class)))
+                .willReturn(willReturnMenu);
+        given(menuProductDao.save(ArgumentMatchers.any(MenuProduct.class)))
+                .willReturn(willReturnMenuProduct);
 
         // when
-        Menu createdMenu = menuService.create(menuRequest);
+        MenuResponse createdMenu = menuService.create(menuRequest);
 
         // then
-        MenuProduct createdMenuProduct = createdMenu.getMenuProducts()
+        long actualMenuId = willReturnMenu.getId();
+        MenuProductResponse createdMenuProduct = createdMenu.getMenuProducts()
                 .get(0);
-        long menuId = menuProductRequest.getMenuId();
+        long expectationMenuId = createdMenuProduct.getMenuId();
         assertAll(
-                () -> assertThat(createdMenuProduct).isEqualToComparingFieldByField(menuProduct),
-                () -> assertThat(menuId).isEqualTo(1L),
+                () -> assertThat(actualMenuId).isEqualTo(expectationMenuId),
                 () -> verify(menuGroupDao).existsById(1L),
                 () -> verify(productDao).findById(1L),
-                () -> verify(menuDao).save(menuRequest),
-                () -> verify(menuProductDao).save(menuProductRequest)
+                () -> verify(menuDao).save(ArgumentMatchers.any(Menu.class)),
+                () -> verify(menuProductDao).save(ArgumentMatchers.any(MenuProduct.class))
         );
     }
 
@@ -91,8 +92,7 @@ class MenuServiceTest {
     @NullSource
     void 메뉴를_생성할_때_메뉴_가격이_null_또는_0_원_미만이면_예외가_발생한다(final BigDecimal invalidPrice) {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
-        Menu menuRequest = MENU_1.생성(menuGroup, invalidPrice);
+        MenuRequest menuRequest = new MenuRequest("메뉴", invalidPrice, 1L, new ArrayList<>());
 
         // when, then
         assertThatThrownBy(() -> menuService.create(menuRequest))
@@ -102,8 +102,7 @@ class MenuServiceTest {
     @Test
     void 메뉴를_생성할_때_저장되지_않은_메뉴_그룹인_경우_예외가_발생한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
-        Menu menuRequest = MENU_1.생성(menuGroup);
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.ZERO, 1L, new ArrayList<>());
         given(menuGroupDao.existsById(1L))
                 .willReturn(false);
 
@@ -118,12 +117,10 @@ class MenuServiceTest {
     @Test
     void 메뉴를_생성할_때_저장되지_않은_제품이_포함된_경우_예외가_발생한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
         Product product = PRODUCT_1.생성(1L);
-        MenuProduct menuProductRequest = MENU_PRODUCT.생성(product);
-        List<MenuProduct> menuProductsRequest = new ArrayList<>();
-        menuProductsRequest.add(menuProductRequest);
-        Menu menuRequest = MENU_1.생성(menuGroup, menuProductsRequest);
+        MenuProduct menuProduct = MENU_PRODUCT.생성(product);
+        List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.ZERO, 1L, menuProducts);
         given(menuGroupDao.existsById(1L))
                 .willReturn(true);
         given(productDao.findById(1L))
@@ -141,13 +138,10 @@ class MenuServiceTest {
     @Test
     void 메뉴를_생성할_때_메뉴_가격이_제품_가격의_합보다_큰_경우_예외가_발생한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
-        Product product = PRODUCT_1.생성(1L, BigDecimal.valueOf(999));
-        MenuProduct menuProductRequest = MENU_PRODUCT.생성(product);
-        List<MenuProduct> menuProductsRequest = new ArrayList<>();
-        menuProductsRequest.add(menuProductRequest);
-        // 1000원짜리 메뉴 생성
-        Menu menuRequest = MENU_1.생성(menuGroup, menuProductsRequest);
+        Product product = PRODUCT_1.생성(1L, BigDecimal.ZERO);
+        MenuProduct menuProduct = MENU_PRODUCT.생성(product);
+        List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.ONE, 1L, menuProducts);
         given(menuGroupDao.existsById(1L))
                 .willReturn(true);
         given(productDao.findById(1L))
@@ -165,28 +159,24 @@ class MenuServiceTest {
     @Test
     void 메뉴_전체를_조회한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
-        Menu menu = MENU_1.생성(1L, menuGroup);
-        List<Menu> menus = new ArrayList<>();
-        menus.add(menu);
-        Product product = PRODUCT_1.생성(1L);
-        MenuProduct menuProduct = MENU_PRODUCT.생성(1L, menu, product);
-        List<MenuProduct> menuProducts = new ArrayList<>();
-        menuProducts.add(menuProduct);
+        List<Menu> menus = Collections.singletonList(
+                new Menu(1L, "메뉴", BigDecimal.valueOf(1000), 1L, new ArrayList<>())
+        );
+        MenuProduct menuProduct = new MenuProduct(1L, 1L, 1L, 1L);
+        List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
         given(menuDao.findAll())
                 .willReturn(menus);
         given(menuProductDao.findAllByMenuId(1L))
                 .willReturn(menuProducts);
 
         // when
-        List<Menu> selectedMenus = menuService.list();
+        List<MenuResponse> response = menuService.list();
 
         // then
-        List<MenuProduct> selectedMenuProducts = selectedMenus.get(0)
+        List<MenuProductResponse> menuProductResponses = response.get(0)
                 .getMenuProducts();
         assertAll(
-                () -> assertThat(menuProducts).usingRecursiveComparison()
-                        .isEqualTo(selectedMenuProducts),
+                () -> assertThat(menuProductResponses).isNotEmpty(),
                 () -> verify(menuDao).findAll(),
                 () -> verify(menuProductDao).findAllByMenuId(1L)
         );

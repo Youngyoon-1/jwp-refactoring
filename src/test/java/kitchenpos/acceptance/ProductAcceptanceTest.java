@@ -1,12 +1,13 @@
 package kitchenpos.acceptance;
 
-import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.util.List;
 import kitchenpos.domain.Product;
+import kitchenpos.dto.request.ProductRequest;
+import kitchenpos.dto.response.ProductResponse;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,22 +26,23 @@ public class ProductAcceptanceTest {
     @Test
     void 제품을_한_개_등록한다() {
         // given
-        Product request = PRODUCT_1.생성();
+        ProductRequest productRequest = new ProductRequest("제품1", BigDecimal.ZERO);
 
         // when
-        ResponseEntity<Product> response = testRestTemplate.postForEntity(
+        ResponseEntity<ProductResponse> response = testRestTemplate.postForEntity(
                 "/api/products",
-                request,
-                Product.class
+                productRequest,
+                ProductResponse.class
         );
 
         // then
-        Product actual = request;
-        BigDecimal actualPrice = actual.getPrice();
-        Product expectation = response.getBody();
+        String actualName = productRequest.getName();
+        BigDecimal actualPrice = productRequest.getPrice();
+        ProductResponse expectation = response.getBody();
+        String expectationName = expectation.getName();
         BigDecimal expectationPrice = expectation.getPrice();
         assertAll(
-                () -> assertThat(request).isEqualToIgnoringGivenFields(expectation, "id", "price"),
+                () -> assertThat(actualName).isEqualTo(expectationName),
                 () -> assertThat(actualPrice).isCloseTo(expectationPrice, Percentage.withPercentage(0.1))
         );
     }
@@ -48,10 +50,10 @@ public class ProductAcceptanceTest {
     @Test
     void 제품_전체를_조회한다() {
         // given
-        Product product = PRODUCT_1.생성();
+        ProductRequest productToSave = new ProductRequest("제품1", BigDecimal.ZERO);
         ResponseEntity<Product> savedProduct = testRestTemplate.postForEntity(
                 "/api/products",
-                product,
+                productToSave,
                 Product.class
         );
 

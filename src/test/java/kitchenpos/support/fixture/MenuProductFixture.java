@@ -43,7 +43,7 @@ public enum MenuProductFixture {
         final MenuProduct menuProduct = new MenuProduct();
         menuProduct.setSeq(id);
         if (menu != null) {
-            menuProduct.setMenuId(menu.getId());
+            menuProduct.updateMenuId(menu.getId());
         }
         menuProduct.setProductId(product.getId());
         menuProduct.setQuantity(quantity);

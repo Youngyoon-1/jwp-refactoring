@@ -1,6 +1,5 @@
 package kitchenpos.ui;
 
-import static kitchenpos.support.fixture.MenuFixture.MENU_1;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -10,10 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import kitchenpos.application.MenuService;
 import kitchenpos.domain.Menu;
+import kitchenpos.domain.MenuProduct;
+import kitchenpos.dto.request.MenuRequest;
+import kitchenpos.dto.response.MenuResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,9 +49,10 @@ class MenuRestControllerTest extends UiTest {
     @Test
     void 메뉴를_등록한다() throws Exception {
         // given
-        Menu menuRequest = MENU_1.생성();
-        Menu menuResponse = MENU_1.생성(1L);
-        BDDMockito.given(menuService.create(any(Menu.class)))
+        List<MenuProduct> menuProducts = new ArrayList<>();
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.ZERO, 1L, menuProducts);
+        MenuResponse menuResponse = new MenuResponse(new Menu(1L, "메뉴", BigDecimal.ZERO, 1L, menuProducts));
+        BDDMockito.given(menuService.create(any(MenuRequest.class)))
                 .willReturn(menuResponse);
 
         // when
@@ -68,17 +73,17 @@ class MenuRestControllerTest extends UiTest {
                                 content().string(serializedResponseContent)
                         )
                 ),
-                () -> verify(menuService).create(any(Menu.class))
+                () -> verify(menuService).create(any(MenuRequest.class))
         );
     }
 
     @Test
     void 메뉴_전체를_조회한다() throws Exception {
         // given
-        Menu menu = MENU_1.생성();
-        List<Menu> menuResponse = Collections.singletonList(menu);
+        Menu menu = new Menu(1L, "메뉴", BigDecimal.ZERO, 1L, new ArrayList<>());
+        List<MenuResponse> menuResponses = Collections.singletonList(new MenuResponse(menu));
         BDDMockito.given(menuService.list())
-                .willReturn(menuResponse);
+                .willReturn(menuResponses);
 
         // when
         ResultActions resultActions = mockMvc.perform(
@@ -86,7 +91,7 @@ class MenuRestControllerTest extends UiTest {
         );
 
         // then
-        String serializedContent = getObjectMapper().writeValueAsString(menuResponse);
+        String serializedContent = getObjectMapper().writeValueAsString(menuResponses);
         assertAll(
                 () -> resultActions.andExpect(
                         matchAll(

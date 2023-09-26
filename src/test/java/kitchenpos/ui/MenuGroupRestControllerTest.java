@@ -15,7 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Collections;
 import java.util.List;
 import kitchenpos.application.MenuGroupService;
-import kitchenpos.domain.MenuGroup;
+import kitchenpos.dto.request.MenuGroupRequest;
+import kitchenpos.dto.response.MenuGroupResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,9 +46,9 @@ class MenuGroupRestControllerTest extends UiTest {
     @Test
     void 메뉴_그룹을_생성한다() throws Exception {
         // given
-        MenuGroup menuGroupRequest = MENU_GROUP_1.생성();
-        MenuGroup menuGroupResponse = MENU_GROUP_1.생성(1L);
-        given(menuGroupService.create(any(MenuGroup.class)))
+        MenuGroupRequest menuGroupRequest = new MenuGroupRequest("메뉴그룹1");
+        MenuGroupResponse menuGroupResponse = new MenuGroupResponse(MENU_GROUP_1.생성(1L));
+        given(menuGroupService.create(any(MenuGroupRequest.class)))
                 .willReturn(menuGroupResponse);
 
         // when
@@ -68,17 +69,17 @@ class MenuGroupRestControllerTest extends UiTest {
                                 content().string(serializedResponseContent)
                         )
                 ),
-                () -> verify(menuGroupService).create(any(MenuGroup.class))
+                () -> verify(menuGroupService).create(any(MenuGroupRequest.class))
         );
     }
 
     @Test
     void 메뉴_그룹_전체를_조회한다() throws Exception {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        List<MenuGroup> menuGroups = Collections.singletonList(menuGroup);
+        MenuGroupResponse menuGroupResponse = new MenuGroupResponse(MENU_GROUP_1.생성(1L));
+        List<MenuGroupResponse> menuGroupResponses = Collections.singletonList(menuGroupResponse);
         given(menuGroupService.list())
-                .willReturn(menuGroups);
+                .willReturn(menuGroupResponses);
 
         // when
         ResultActions resultActions = mockMvc.perform(
@@ -87,7 +88,7 @@ class MenuGroupRestControllerTest extends UiTest {
         );
 
         // then
-        String serializedContent = getObjectMapper().writeValueAsString(menuGroups);
+        String serializedContent = getObjectMapper().writeValueAsString(menuGroupResponses);
         assertAll(
                 () -> resultActions.andExpect(
                         matchAll(

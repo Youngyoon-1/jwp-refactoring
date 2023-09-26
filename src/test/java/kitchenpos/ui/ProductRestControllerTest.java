@@ -3,10 +3,12 @@ package kitchenpos.ui;
 import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import kitchenpos.application.ProductService;
-import kitchenpos.domain.Product;
+import kitchenpos.dto.request.ProductRequest;
+import kitchenpos.dto.response.ProductResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,9 +43,9 @@ class ProductRestControllerTest extends UiTest {
     @Test
     void 제품을_등록한다() throws Exception {
         // given
-        Product productRequest = PRODUCT_1.생성();
-        Product productResponse = PRODUCT_1.생성(1L);
-        BDDMockito.given(productService.create(ArgumentMatchers.any(Product.class)))
+        ProductRequest productRequest = new ProductRequest("제품1", BigDecimal.ZERO);
+        ProductResponse productResponse = new ProductResponse(PRODUCT_1.생성(1L));
+        BDDMockito.given(productService.create(ArgumentMatchers.any(ProductRequest.class)))
                 .willReturn(productResponse);
 
         // when
@@ -64,17 +66,17 @@ class ProductRestControllerTest extends UiTest {
                                 MockMvcResultMatchers.content().string(serializedResponseContent)
                         )
                 ),
-                () -> BDDMockito.verify(productService).create(ArgumentMatchers.any(Product.class))
+                () -> BDDMockito.verify(productService).create(ArgumentMatchers.any(ProductRequest.class))
         );
     }
 
     @Test
     void 제품_전체를_조회한다() throws Exception {
         // given
-        Product product = PRODUCT_1.생성();
-        List<Product> response = Collections.singletonList(product);
+        ProductResponse productResponse = new ProductResponse(PRODUCT_1.생성(1L));
+        List<ProductResponse> productResponses = Collections.singletonList(productResponse);
         BDDMockito.given(productService.list())
-                .willReturn(response);
+                .willReturn(productResponses);
 
         // when
         ResultActions resultActions = mockMvc.perform(
@@ -82,7 +84,7 @@ class ProductRestControllerTest extends UiTest {
         );
 
         // then
-        String serializedContent = getObjectMapper().writeValueAsString(response);
+        String serializedContent = getObjectMapper().writeValueAsString(productResponses);
         assertAll(
                 () -> resultActions.andExpect(
                         ResultMatcher.matchAll(

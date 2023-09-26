@@ -7,6 +7,21 @@ public class Product {
     private String name;
     private BigDecimal price;
 
+    public Product() {
+    }
+
+    public Product(final String name, final BigDecimal price) {
+        validatePrice(price);
+        this.price = price;
+        this.name = name;
+    }
+
+    private void validatePrice(final BigDecimal price) {
+        if (price == null || price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException();
+        }
+    }
+
     public Long getId() {
         return id;
     }

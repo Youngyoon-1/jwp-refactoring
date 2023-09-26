@@ -44,6 +44,10 @@ public enum MenuFixture {
         return 생성(null, menuGroup, price, null);
     }
 
+    public Menu 생성(final long id, final List<MenuProduct> menuProducts) {
+        return 생성(id, null, this.price, menuProducts);
+    }
+
     public Menu 생성(final Long id, final MenuGroup menuGroup, final BigDecimal price,
                    final List<MenuProduct> menuProducts) {
         final Menu menu = new Menu();

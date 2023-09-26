@@ -1,18 +1,23 @@
 package kitchenpos.application;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import kitchenpos.dao.OrderDao;
 import kitchenpos.dao.OrderTableDao;
 import kitchenpos.domain.OrderStatus;
 import kitchenpos.domain.OrderTable;
+import kitchenpos.dto.request.TableRequestToChangeEmpty;
+import kitchenpos.dto.request.TableRequestToChangeNumberOfGuests;
+import kitchenpos.dto.request.TableRequestToCreate;
+import kitchenpos.dto.response.OrderTableResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
 @Service
+@Transactional(readOnly = true)
 public class TableService {
+
     private final OrderDao orderDao;
     private final OrderTableDao orderTableDao;
 
@@ -22,53 +27,47 @@ public class TableService {
     }
 
     @Transactional
-    public OrderTable create(final OrderTable orderTable) {
-        orderTable.setId(null);
-        orderTable.setTableGroupId(null);
-
-        return orderTableDao.save(orderTable);
+    public OrderTableResponse create(final TableRequestToCreate tableRequest) {
+        final OrderTable orderTable = tableRequest.toEntity();
+        final OrderTable savedOrderTable = orderTableDao.save(orderTable);
+        return new OrderTableResponse(savedOrderTable);
     }
 
-    public List<OrderTable> list() {
-        return orderTableDao.findAll();
+    public List<OrderTableResponse> list() {
+        final List<OrderTable> orderTables = orderTableDao.findAll();
+        return orderTables.stream()
+                .map(OrderTableResponse::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public OrderTable changeEmpty(final Long orderTableId, final OrderTable orderTable) {
-        final OrderTable savedOrderTable = orderTableDao.findById(orderTableId)
+    public OrderTableResponse changeEmpty(final Long orderTableId, final TableRequestToChangeEmpty tableRequest) {
+        final OrderTable orderTable = orderTableDao.findById(orderTableId)
                 .orElseThrow(IllegalArgumentException::new);
 
-        if (Objects.nonNull(savedOrderTable.getTableGroupId())) {
-            throw new IllegalArgumentException();
-        }
+        orderTable.validateToUpdateEmpty();
 
         if (orderDao.existsByOrderTableIdAndOrderStatusIn(
                 orderTableId, Arrays.asList(OrderStatus.COOKING.name(), OrderStatus.MEAL.name()))) {
             throw new IllegalArgumentException();
         }
 
-        savedOrderTable.setEmpty(orderTable.isEmpty());
-
-        return orderTableDao.save(savedOrderTable);
+        orderTable.setEmpty(tableRequest.isEmpty());
+        final OrderTable savedOrderTable = orderTableDao.save(orderTable);
+        return new OrderTableResponse(savedOrderTable);
     }
 
     @Transactional
-    public OrderTable changeNumberOfGuests(final Long orderTableId, final OrderTable orderTable) {
-        final int numberOfGuests = orderTable.getNumberOfGuests();
+    public OrderTableResponse changeNumberOfGuests(final Long orderTableId,
+                                                   final TableRequestToChangeNumberOfGuests tableRequest) {
+        final OrderTable orderTable = tableRequest.toEntity();
 
-        if (numberOfGuests < 0) {
-            throw new IllegalArgumentException();
-        }
-
-        final OrderTable savedOrderTable = orderTableDao.findById(orderTableId)
+        final OrderTable selectedOrderTable = orderTableDao.findById(orderTableId)
                 .orElseThrow(IllegalArgumentException::new);
 
-        if (savedOrderTable.isEmpty()) {
-            throw new IllegalArgumentException();
-        }
+        selectedOrderTable.updateNumberOfGuests(orderTable);
 
-        savedOrderTable.setNumberOfGuests(numberOfGuests);
-
-        return orderTableDao.save(savedOrderTable);
+        final OrderTable savedOrderTable = orderTableDao.save(selectedOrderTable);
+        return new OrderTableResponse(savedOrderTable);
     }
 }

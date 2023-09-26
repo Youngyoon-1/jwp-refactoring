@@ -2,13 +2,36 @@ package kitchenpos.domain;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.springframework.util.CollectionUtils;
 
 public class Order {
+
     private Long id;
     private Long orderTableId;
     private String orderStatus;
     private LocalDateTime orderedTime;
     private List<OrderLineItem> orderLineItems;
+
+    public Order() {
+    }
+
+    public Order(final Long id, final Long orderTableId, final String orderStatus, final LocalDateTime orderedTime,
+                 final List<OrderLineItem> orderLineItems) {
+        this.id = id;
+        this.orderTableId = orderTableId;
+        this.orderStatus = orderStatus;
+        this.orderedTime = orderedTime;
+        this.orderLineItems = orderLineItems;
+    }
+
+    public static Order createToSave(final long orderTableId, final List<OrderLineItem> orderLineItems) {
+        if (CollectionUtils.isEmpty(orderLineItems)) {
+            throw new IllegalArgumentException();
+        }
+        return new Order(null, orderTableId, OrderStatus.COOKING.name(), LocalDateTime.now(), orderLineItems);
+    }
 
     public Long getId() {
         return id;
@@ -48,5 +71,24 @@ public class Order {
 
     public void setOrderLineItems(final List<OrderLineItem> orderLineItems) {
         this.orderLineItems = orderLineItems;
+    }
+
+    public List<Long> collectMenuIds() {
+        return this.orderLineItems.stream()
+                .map(OrderLineItem::getMenuId)
+                .collect(Collectors.toList());
+    }
+
+    public void validateToSave(final long menuCount) {
+        if (this.orderLineItems.size() != menuCount) {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public void updateOrderStatus(final String orderStatus) {
+        if (Objects.equals(OrderStatus.COMPLETION.name(), this.orderStatus)) {
+            throw new IllegalArgumentException();
+        }
+        this.orderStatus = OrderStatus.valueOf(orderStatus).name();
     }
 }

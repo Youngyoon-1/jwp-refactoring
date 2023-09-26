@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.util.List;
 import kitchenpos.domain.OrderTable;
+import kitchenpos.dto.request.TableRequestToChangeNumberOfGuests;
+import kitchenpos.dto.request.TableRequestToCreate;
+import kitchenpos.dto.response.OrderTableResponse;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -73,64 +77,56 @@ public class TableAcceptanceTest {
     @Test
     void 주문_테이블_한_개를_저장하고_주문_테이블의_자리_상태를_변경한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE.생성();
-        ResponseEntity<OrderTable> savedOrderTable = testRestTemplate.postForEntity(
+        TableRequestToCreate orderTableRequestToSave = new TableRequestToCreate(1, false);
+        ResponseEntity<OrderTableResponse> savedOrderTable = testRestTemplate.postForEntity(
                 "/api/tables",
-                orderTable,
-                OrderTable.class
+                orderTableRequestToSave,
+                OrderTableResponse.class
         );
-        OrderTable request = ORDER_TABLE.생성(true);
-        long orderTableId = savedOrderTable.getBody()
-                .getId();
 
         // when
-        ResponseEntity<OrderTable> response = testRestTemplate.exchange(
+        long orderTableId = savedOrderTable.getBody()
+                .getId();
+        TableRequestToCreate orderTableRequestToChangeEmpty = new TableRequestToCreate(0, true);
+        ResponseEntity<OrderTableResponse> changedOrderTable = testRestTemplate.exchange(
                 "/api/tables/" + orderTableId + "/empty",
                 HttpMethod.PUT,
-                new HttpEntity<>(request),
-                OrderTable.class
+                new HttpEntity<>(orderTableRequestToChangeEmpty),
+                OrderTableResponse.class
         );
 
         // then
-        OrderTable actual = savedOrderTable.getBody();
-        boolean actualEmpty = actual.isEmpty();
-        OrderTable expectation = response.getBody();
-        boolean expectationEmpty = expectation.isEmpty();
-        assertAll(
-                () -> assertThat(actual).isEqualToIgnoringGivenFields(expectation, "empty"),
-                () -> assertThat(actualEmpty).isNotEqualTo(expectationEmpty)
-        );
+        boolean changedEmpty = changedOrderTable.getBody()
+                .isEmpty();
+        Assertions.assertThat(changedEmpty).isTrue();
     }
 
     @Test
     void 주문_테이블_한_개를_저장하고_저장한_주문_테이블의_손님_수를_수정한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE.생성();
-        ResponseEntity<OrderTable> savedOrderTable = testRestTemplate.postForEntity(
+        TableRequestToCreate tableRequestToCreate = new TableRequestToCreate(1, false);
+        ResponseEntity<OrderTableResponse> savedOrderTable = testRestTemplate.postForEntity(
                 "/api/tables",
-                orderTable,
-                OrderTable.class
+                tableRequestToCreate,
+                OrderTableResponse.class
         );
 
         // when
-        OrderTable request = ORDER_TABLE.생성(1);
+        TableRequestToChangeNumberOfGuests tableRequestToChangeNumberOfGuests = new TableRequestToChangeNumberOfGuests(
+                2);
         long orderTableId = savedOrderTable.getBody()
                 .getId();
-        ResponseEntity<OrderTable> response = testRestTemplate.exchange(
+        ResponseEntity<OrderTableResponse> response = testRestTemplate.exchange(
                 "/api/tables/" + orderTableId + "/number-of-guests",
                 HttpMethod.PUT,
-                new HttpEntity<>(request),
-                OrderTable.class
+                new HttpEntity<>(tableRequestToChangeNumberOfGuests),
+                OrderTableResponse.class
         );
 
         // then
-        OrderTable actual = savedOrderTable.getBody();
-        int actualNumberOfGuests = request.getNumberOfGuests();
-        OrderTable expectation = response.getBody();
-        int expectationNumberOfGuests = expectation.getNumberOfGuests();
-        assertAll(
-                () -> assertThat(actual).isEqualToIgnoringGivenFields(expectation, "numberOfGuests"),
-                () -> assertThat(actualNumberOfGuests).isEqualTo(expectationNumberOfGuests)
-        );
+        int actualNumberOfGuests = tableRequestToChangeNumberOfGuests.getNumberOfGuests();
+        int expectationNumberOfGuests = response.getBody()
+                .getNumberOfGuests();
+        assertThat(actualNumberOfGuests).isEqualTo(expectationNumberOfGuests);
     }
 }

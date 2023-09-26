@@ -1,7 +1,6 @@
 package kitchenpos.application;
 
 import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
-import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -14,17 +13,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import kitchenpos.dao.OrderDao;
 import kitchenpos.dao.OrderTableDao;
 import kitchenpos.dao.TableGroupDao;
 import kitchenpos.domain.OrderStatus;
 import kitchenpos.domain.OrderTable;
 import kitchenpos.domain.TableGroup;
+import kitchenpos.dto.request.TableGroupRequest;
+import kitchenpos.dto.request.TableRequestToCreateTableGroup;
+import kitchenpos.dto.response.OrderTableResponse;
+import kitchenpos.dto.response.TableGroupResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,125 +50,116 @@ class TableGroupServiceTest {
     @Test
     void 테이블_그룹을_생성한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE.생성(true);
-        List<OrderTable> orderTables = new ArrayList<>();
-        orderTables.add(orderTable);
-        orderTables.add(orderTable);
-        TableGroup tableGroupRequest = TABLE_GROUP.생성(orderTables);
-        List<Long> idsOfOrderTable = new ArrayList<>();
-        idsOfOrderTable.add(null);
-        idsOfOrderTable.add(null);
-        TableGroup tableGroup = TABLE_GROUP.생성(1L);
-        given(orderTableDao.findAllByIdIn(idsOfOrderTable))
-                .willReturn(orderTables);
-        given(tableGroupDao.save(tableGroupRequest))
-                .willReturn(tableGroup);
-        given(orderTableDao.save(orderTable))
+        Long orderTableId1 = 1L;
+        Long orderTableId2 = 2L;
+        List<Long> orderTableIds = Arrays.asList(orderTableId1, orderTableId2);
+        OrderTable orderTable1 = new OrderTable(orderTableId1, null, 0, true);
+        OrderTable orderTable2 = new OrderTable(orderTableId2, null, 0, true);
+        List<OrderTable> savedOrderTables = Arrays.asList(orderTable1, orderTable2);
+        given(orderTableDao.findAllByIdIn(orderTableIds))
+                .willReturn(savedOrderTables);
+        TableRequestToCreateTableGroup tableRequest1 = new TableRequestToCreateTableGroup(orderTableId1);
+        TableRequestToCreateTableGroup tableRequest2 = new TableRequestToCreateTableGroup(orderTableId2);
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(Arrays.asList(tableRequest1, tableRequest2));
+        LocalDateTime createdDate = tableGroupRequest.toEntity()
+                .getCreatedDate();
+        TableGroup savedTableGroup = new TableGroup(1L, createdDate, null);
+        given(tableGroupDao.save(ArgumentMatchers.any(TableGroup.class)))
+                .willReturn(savedTableGroup);
+        given(orderTableDao.save(ArgumentMatchers.any(OrderTable.class)))
                 .willReturn(null);
 
         // when
-        TableGroup createdTableGroup = tableGroupService.create(tableGroupRequest);
+        TableGroupResponse tableGroupResponse = tableGroupService.create(tableGroupRequest);
 
         // then
-        LocalDateTime createdDate = tableGroupRequest.getCreatedDate();
-        List<OrderTable> createdOrderTables = createdTableGroup.getOrderTables();
-        List<Long> createdIdsOfOrderTable = createdOrderTables.stream()
-                .map(OrderTable::getTableGroupId)
-                .collect(Collectors.toList());
-        final List<Boolean> createdEmptyOfOrderTable = createdOrderTables.stream()
-                .map(OrderTable::isEmpty)
-                .collect(Collectors.toList());
+        List<OrderTableResponse> actualOrderTables = tableGroupResponse.getOrderTables();
+        List<OrderTable> expectationOrderTables = savedOrderTables;
         assertAll(
-                () -> assertThat(createdDate).isNotNull(),
-                () -> assertThat(createdIdsOfOrderTable).containsOnly(1L),
-                () -> assertThat(createdEmptyOfOrderTable).containsOnly(false),
-                () -> verify(orderTableDao).findAllByIdIn(idsOfOrderTable),
-                () -> verify(tableGroupDao).save(tableGroupRequest),
-                () -> verify(orderTableDao, times(2)).save(orderTable)
+                () -> assertThat(actualOrderTables).usingRecursiveComparison()
+                        .isEqualTo(expectationOrderTables),
+                () -> verify(orderTableDao).findAllByIdIn(orderTableIds),
+                () -> verify(tableGroupDao).save(ArgumentMatchers.any(TableGroup.class)),
+                () -> verify(orderTableDao, times(2)).save(ArgumentMatchers.any(OrderTable.class))
         );
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1})
     void 테이블_그룹을_생성할_때_주문_테이블이_0개_또는_2개_미만인_경우_예외가_발생한다(final int count) {
-        // given
-        List<OrderTable> orderTables = new ArrayList<>();
-        OrderTable orderTable = ORDER_TABLE.생성();
+        List<TableRequestToCreateTableGroup> orderTableRequests = new ArrayList<>();
+        TableRequestToCreateTableGroup orderTableRequest = new TableRequestToCreateTableGroup((long) count);
         for (int i = 0; i < count; i++) {
-            orderTables.add(orderTable);
+            orderTableRequests.add(orderTableRequest);
         }
-        TableGroup tableGroup = TABLE_GROUP.생성(orderTables);
-
-        // when, then
-        assertThatThrownBy(() -> tableGroupService.create(tableGroup))
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(orderTableRequests);
+        assertThatThrownBy(() -> tableGroupService.create(tableGroupRequest))
                 .isExactlyInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void 테이블_그룹을_생성할_때_등록되지_않은_주문_테이블이_존재하면_예외가_발생한다() {
         // given
-        List<OrderTable> orderTablesRequest = new ArrayList<>();
-        OrderTable orderTable = ORDER_TABLE.생성();
-        orderTablesRequest.add(orderTable);
-        orderTablesRequest.add(orderTable);
-        TableGroup tableGroupRequest = TABLE_GROUP.생성(orderTablesRequest);
-        List<Long> idsOfOrderTableRequest = new ArrayList<>();
-        idsOfOrderTableRequest.add(null);
-        idsOfOrderTableRequest.add(null);
-        List<OrderTable> orderTables = new ArrayList<>();
-        given(orderTableDao.findAllByIdIn(idsOfOrderTableRequest))
-                .willReturn(orderTables);
+        Long orderTableId1 = 1L;
+        Long orderTableId2 = 2L;
+        List<Long> OrderTableIds = Arrays.asList(orderTableId1, orderTableId2);
+        List<OrderTable> savedOrderTables = new ArrayList<>();
+        given(orderTableDao.findAllByIdIn(OrderTableIds))
+                .willReturn(savedOrderTables);
 
         // when, then
+        TableRequestToCreateTableGroup tableRequest1 = new TableRequestToCreateTableGroup(orderTableId1);
+        TableRequestToCreateTableGroup tableRequest2 = new TableRequestToCreateTableGroup(orderTableId2);
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(Arrays.asList(tableRequest1, tableRequest2));
         assertAll(
                 () -> assertThatThrownBy(() -> tableGroupService.create(tableGroupRequest))
                         .isExactlyInstanceOf(IllegalArgumentException.class),
-                () -> verify(orderTableDao).findAllByIdIn(idsOfOrderTableRequest)
+                () -> verify(orderTableDao).findAllByIdIn(OrderTableIds)
         );
     }
 
     @Test
-    void 테이블_그룹을_생성할_때_자리의_상태가_차있는_주문_테이블이_존재하면_예외가_발생한다() {
+    void 테이블_그룹을_생성할_때_자리의_상태가_비어있지_않은_주문_테이블이_존재하면_예외가_발생한다() {
         // given
-        List<OrderTable> orderTables = new ArrayList<>();
-        OrderTable orderTable = ORDER_TABLE.생성();
-        orderTables.add(orderTable);
-        orderTables.add(orderTable);
-        TableGroup tableGroup = TABLE_GROUP.생성(orderTables);
-        List<Long> idsOfOrderTable = new ArrayList<>();
-        idsOfOrderTable.add(null);
-        idsOfOrderTable.add(null);
-        given(orderTableDao.findAllByIdIn(idsOfOrderTable))
+        Long orderTableId1 = 1L;
+        Long orderTableId2 = 2L;
+        List<Long> orderTableIds = Arrays.asList(orderTableId1, orderTableId2);
+        OrderTable orderTable1 = new OrderTable(orderTableId1, null, 0, false);
+        OrderTable orderTable2 = new OrderTable(orderTableId2, null, 0, false);
+        List<OrderTable> orderTables = Arrays.asList(orderTable1, orderTable2);
+        given(orderTableDao.findAllByIdIn(orderTableIds))
                 .willReturn(orderTables);
 
         // when, then
+        TableRequestToCreateTableGroup tableRequest1 = new TableRequestToCreateTableGroup(orderTableId1);
+        TableRequestToCreateTableGroup tableRequest2 = new TableRequestToCreateTableGroup(orderTableId2);
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(Arrays.asList(tableRequest1, tableRequest2));
         assertAll(
-                () -> assertThatThrownBy(() -> tableGroupService.create(tableGroup))
+                () -> assertThatThrownBy(() -> tableGroupService.create(tableGroupRequest))
                         .isExactlyInstanceOf(IllegalArgumentException.class),
-                () -> verify(orderTableDao).findAllByIdIn(idsOfOrderTable)
+                () -> verify(orderTableDao).findAllByIdIn(orderTableIds)
         );
     }
 
     @Test
     void 테이블_그룹을_생성할_때_이미_테이블_그룹을_가진_주문_테이블이_존재하면_예외가_발생한다() {
         // given
-        long tableGroupId = 1L;
-        OrderTable orderTable = ORDER_TABLE.생성(tableGroupId, true);
-        List<OrderTable> orderTables = new ArrayList<>();
-        orderTables.add(orderTable);
-        orderTables.add(orderTable);
-        TableGroup tableGroup = TABLE_GROUP.생성(orderTables);
-        List<Long> idsOfOrderTable = new ArrayList<>();
-        idsOfOrderTable.add(null);
-        idsOfOrderTable.add(null);
-        given(orderTableDao.findAllByIdIn(idsOfOrderTable))
-                .willReturn(orderTables);
+        Long orderTableId1 = 1L;
+        Long orderTableId2 = 2L;
+        List<Long> orderTableIds = Arrays.asList(orderTableId1, orderTableId2);
+        OrderTable orderTable1 = new OrderTable(orderTableId1, 1L, 0, true);
+        OrderTable orderTable2 = new OrderTable(orderTableId2, 1L, 0, true);
+        given(orderTableDao.findAllByIdIn(orderTableIds))
+                .willReturn(Arrays.asList(orderTable1, orderTable2));
 
         // when, then
+        TableRequestToCreateTableGroup tableRequest1 = new TableRequestToCreateTableGroup(orderTableId1);
+        TableRequestToCreateTableGroup tableRequest2 = new TableRequestToCreateTableGroup(orderTableId2);
+        TableGroupRequest tableGroupRequest = new TableGroupRequest(Arrays.asList(tableRequest1, tableRequest2));
         assertAll(
-                () -> assertThatThrownBy(() -> tableGroupService.create(tableGroup))
+                () -> assertThatThrownBy(() -> tableGroupService.create(tableGroupRequest))
                         .isExactlyInstanceOf(IllegalArgumentException.class),
-                () -> verify(orderTableDao).findAllByIdIn(idsOfOrderTable)
+                () -> verify(orderTableDao).findAllByIdIn(orderTableIds)
         );
     }
 
