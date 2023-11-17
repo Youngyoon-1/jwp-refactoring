@@ -24,7 +24,7 @@ public class MenuGroupAcceptanceTest {
     @Test
     void 메뉴_그룹을_한_개_등록한다() {
         // given
-        MenuGroupRequest request = new MenuGroupRequest("메뉴그룹1");
+        MenuGroupRequest request = new MenuGroupRequest("메뉴그룹이름");
 
         // when
         ResponseEntity<MenuGroupResponse> response = testRestTemplate.postForEntity(
@@ -38,29 +38,30 @@ public class MenuGroupAcceptanceTest {
         String locationUri = Objects.requireNonNull(response.getHeaders()
                         .getLocation())
                 .toString();
-        MenuGroupResponse body = response.getBody();
-        String actualMenuGroupName = request.getName();
-        String savedMenuGroupName = body.getName();
+        MenuGroupResponse menuGroupResponse = response.getBody();
+        long menuGroupId = menuGroupResponse.getId();
+        String menuGroupName = menuGroupResponse.getName();
         assertAll(
                 () -> assertThat(httpStatus).isEqualTo(HttpStatus.CREATED),
-                () -> assertThat(locationUri).isEqualTo("/api/menu-groups/" + body.getId()),
-                () -> assertThat(actualMenuGroupName).isEqualTo(savedMenuGroupName)
+                () -> assertThat(locationUri).isEqualTo("/api/menu-groups/" + menuGroupResponse.getId()),
+                () -> assertThat(menuGroupId).isNotNull(),
+                () -> assertThat(menuGroupName).isEqualTo("메뉴그룹이름")
         );
     }
 
     @Test
-    void 메뉴_그룹을_전체_조회한다() {
+    void 메뉴_그룹을_한_개_저장한_뒤_전체를_조회한다() {
         // given
-        MenuGroupRequest requestToSave = new MenuGroupRequest("메뉴그룹1");
-        // 메뉴 그룹을 한 개 저장한다
-        ResponseEntity<MenuGroupResponse> savedMenuGroup = testRestTemplate.postForEntity(
+        MenuGroupRequest request = new MenuGroupRequest("메뉴그룹이름");
+
+        // when
+        ResponseEntity<MenuGroupResponse> responseToSave = testRestTemplate.postForEntity(
                 "/api/menu-groups",
-                requestToSave,
+                request,
                 MenuGroupResponse.class
         );
 
-        // when
-        ResponseEntity<List<MenuGroupResponse>> response = testRestTemplate.exchange(
+        ResponseEntity<List<MenuGroupResponse>> responseToSelect = testRestTemplate.exchange(
                 "/api/menu-groups",
                 HttpMethod.GET,
                 null,
@@ -69,9 +70,9 @@ public class MenuGroupAcceptanceTest {
         );
 
         // then
-        MenuGroupResponse actualMenuGroup = savedMenuGroup.getBody();
-        MenuGroupResponse selectedMenuGroup = response.getBody()
+        MenuGroupResponse menuGroupResponseToSave = responseToSave.getBody();
+        MenuGroupResponse menuGroupResponseToSelect = responseToSelect.getBody()
                 .get(0);
-        assertThat(actualMenuGroup).isEqualToComparingFieldByField(selectedMenuGroup);
+        assertThat(menuGroupResponseToSave).isEqualToComparingFieldByField(menuGroupResponseToSelect);
     }
 }

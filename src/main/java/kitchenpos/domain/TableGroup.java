@@ -3,10 +3,28 @@ package kitchenpos.domain;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "table_group")
 public class TableGroup {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "created_date")
     private LocalDateTime createdDate;
+
+    @OneToMany
+    @JoinColumn(name = "table_group_id")
     private List<OrderTable> orderTables;
 
     public TableGroup() {
@@ -18,11 +36,8 @@ public class TableGroup {
         this.orderTables = orderTables;
     }
 
-    public static TableGroup createToSave(final List<OrderTable> orderTables) {
-        if (orderTables == null || orderTables.size() < 2) {
-            throw new IllegalArgumentException();
-        }
-        return new TableGroup(null, LocalDateTime.now(), orderTables);
+    public TableGroup(final List<OrderTable> orderTables) {
+        this(null, null, orderTables);
     }
 
     public Long getId() {
@@ -37,7 +52,7 @@ public class TableGroup {
         return createdDate;
     }
 
-    public void setCreatedDate(final LocalDateTime createdDate) {
+    public void updateCreatedDate(final LocalDateTime createdDate) {
         this.createdDate = createdDate;
     }
 
@@ -53,11 +68,5 @@ public class TableGroup {
         return orderTables.stream()
                 .map(OrderTable::getId)
                 .collect(Collectors.toList());
-    }
-
-    public void validateToSave(final List<OrderTable> orderTables) {
-        if (this.orderTables.size() != orderTables.size()) {
-            throw new IllegalArgumentException();
-        }
     }
 }

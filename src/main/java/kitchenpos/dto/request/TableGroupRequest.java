@@ -18,9 +18,9 @@ public class TableGroupRequest {
 
     public TableGroup toEntity() {
         final List<OrderTable> orderTables = this.orderTables.stream()
-                .map(tableRequest -> OrderTable.createToSaveTableGroup(tableRequest.getId()))
+                .map(tableRequest -> new OrderTable(tableRequest.getId()))
                 .collect(Collectors.toList());
-        return TableGroup.createToSave(orderTables);
+        return new TableGroup(orderTables);
     }
 
     public List<TableRequestToCreateTableGroup> getOrderTables() {

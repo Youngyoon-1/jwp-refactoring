@@ -1,12 +1,10 @@
 package kitchenpos.application;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import kitchenpos.dao.OrderDao;
-import kitchenpos.dao.OrderTableDao;
-import kitchenpos.domain.OrderStatus;
 import kitchenpos.domain.OrderTable;
+import kitchenpos.domain.OrderTableRepository;
+import kitchenpos.domain.TableValidator;
 import kitchenpos.dto.request.TableRequestToChangeEmpty;
 import kitchenpos.dto.request.TableRequestToChangeNumberOfGuests;
 import kitchenpos.dto.request.TableRequestToCreate;
@@ -18,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TableService {
 
-    private final OrderDao orderDao;
-    private final OrderTableDao orderTableDao;
+    private final TableValidator tableValidator;
+    private final OrderTableRepository orderTableDao;
 
-    public TableService(final OrderDao orderDao, final OrderTableDao orderTableDao) {
-        this.orderDao = orderDao;
+    public TableService(final TableValidator tableValidator, final OrderTableRepository orderTableDao) {
+        this.tableValidator = tableValidator;
         this.orderTableDao = orderTableDao;
     }
 
@@ -43,31 +41,22 @@ public class TableService {
     @Transactional
     public OrderTableResponse changeEmpty(final Long orderTableId, final TableRequestToChangeEmpty tableRequest) {
         final OrderTable orderTable = orderTableDao.findById(orderTableId)
-                .orElseThrow(IllegalArgumentException::new);
-
-        orderTable.validateToUpdateEmpty();
-
-        if (orderDao.existsByOrderTableIdAndOrderStatusIn(
-                orderTableId, Arrays.asList(OrderStatus.COOKING.name(), OrderStatus.MEAL.name()))) {
-            throw new IllegalArgumentException();
-        }
-
-        orderTable.setEmpty(tableRequest.isEmpty());
-        final OrderTable savedOrderTable = orderTableDao.save(orderTable);
-        return new OrderTableResponse(savedOrderTable);
+                .orElseThrow(() -> new IllegalArgumentException("주문 테이블의 자리 상태를 변경할 때 주문 테이블이 저장되어 있어야 합니다."));
+        tableValidator.validateToChangeEmpty(orderTable);
+        orderTable.updateEmpty(tableRequest.isEmpty());
+        return new OrderTableResponse(orderTable);
     }
 
     @Transactional
     public OrderTableResponse changeNumberOfGuests(final Long orderTableId,
                                                    final TableRequestToChangeNumberOfGuests tableRequest) {
-        final OrderTable orderTable = tableRequest.toEntity();
-
-        final OrderTable selectedOrderTable = orderTableDao.findById(orderTableId)
-                .orElseThrow(IllegalArgumentException::new);
-
-        selectedOrderTable.updateNumberOfGuests(orderTable);
-
-        final OrderTable savedOrderTable = orderTableDao.save(selectedOrderTable);
-        return new OrderTableResponse(savedOrderTable);
+        if (tableRequest.getNumberOfGuests() < 0) {
+            throw new IllegalArgumentException("주문 테이블의 손님 수를 변경할 때 변경할 수가 음수면 안됩니다.");
+        }
+        final OrderTable orderTable = orderTableDao.findById(orderTableId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 테이블의 손님 수를 변경할 때 주문 테이블이 저장되어 있어야 합니다."));
+        tableValidator.validateToChangeNumberOfGuests(orderTable);
+        orderTable.updateNumberOfGuests(tableRequest.toEntity());
+        return new OrderTableResponse(orderTable);
     }
 }

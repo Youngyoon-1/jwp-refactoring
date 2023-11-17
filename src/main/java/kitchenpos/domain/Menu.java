@@ -2,20 +2,40 @@ package kitchenpos.domain;
 
 import java.math.BigDecimal;
 import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "menu")
 public class Menu {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "name")
     private String name;
+
+    @Column(name = "price")
     private BigDecimal price;
+
+    @Column(name = "menu_group_id")
     private Long menuGroupId;
+
+    @OneToMany
+    @JoinColumn(name = "menu_id")
     private List<MenuProduct> menuProducts;
 
     public Menu() {
     }
 
-    public Menu(final String name, final BigDecimal price, final long menuGroupId, List<MenuProduct> menuProducts) {
-        validatePrice(price);
+    public Menu(final String name, final BigDecimal price, final Long menuGroupId, List<MenuProduct> menuProducts) {
         this.name = name;
         this.price = price;
         this.menuGroupId = menuGroupId;
@@ -29,12 +49,6 @@ public class Menu {
         this.price = price;
         this.menuGroupId = menuGroupId;
         this.menuProducts = menuProducts;
-    }
-
-    private void validatePrice(final BigDecimal price) {
-        if (price == null || price.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException();
-        }
     }
 
     public Long getId() {
@@ -75,11 +89,5 @@ public class Menu {
 
     public void setMenuProducts(final List<MenuProduct> menuProducts) {
         this.menuProducts = menuProducts;
-    }
-
-    public void validatePriceWithProductPrice(final BigDecimal totalProductPrice) {
-        if (this.price.compareTo(totalProductPrice) > 0) {
-            throw new IllegalArgumentException();
-        }
     }
 }

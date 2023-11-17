@@ -22,7 +22,7 @@ public class OrderRequestToCreate {
         final List<OrderLineItem> orderLineItems = this.orderLineItems.stream()
                 .map(OrderLineItemRequestToCreate::toEntity)
                 .collect(Collectors.toList());
-        return Order.createToSave(orderTableId, orderLineItems);
+        return new Order(null, orderTableId, null, null, orderLineItems);
     }
 
     public long getOrderTableId() {

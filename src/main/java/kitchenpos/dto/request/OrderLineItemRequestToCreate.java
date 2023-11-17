@@ -16,7 +16,7 @@ public class OrderLineItemRequestToCreate {
     }
 
     public OrderLineItem toEntity() {
-        return OrderLineItem.createToSave(menuId, quantity);
+        return new OrderLineItem(null, null, menuId, quantity);
     }
 
     public long getMenuId() {

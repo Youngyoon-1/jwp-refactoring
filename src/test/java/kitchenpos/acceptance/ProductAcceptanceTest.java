@@ -5,10 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.util.List;
-import kitchenpos.domain.Product;
 import kitchenpos.dto.request.ProductRequest;
 import kitchenpos.dto.response.ProductResponse;
-import org.assertj.core.data.Percentage;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -26,50 +25,57 @@ public class ProductAcceptanceTest {
     @Test
     void 제품을_한_개_등록한다() {
         // given
-        ProductRequest productRequest = new ProductRequest("제품1", BigDecimal.ZERO);
+        ProductRequest request = new ProductRequest("제품이름", BigDecimal.valueOf(1000));
 
         // when
         ResponseEntity<ProductResponse> response = testRestTemplate.postForEntity(
                 "/api/products",
-                productRequest,
+                request,
                 ProductResponse.class
         );
 
         // then
-        String actualName = productRequest.getName();
-        BigDecimal actualPrice = productRequest.getPrice();
-        ProductResponse expectation = response.getBody();
-        String expectationName = expectation.getName();
-        BigDecimal expectationPrice = expectation.getPrice();
+        ProductResponse productResponse = response.getBody();
+        long productId = productResponse.getId();
+        String productName = productResponse.getName();
+        BigDecimal price = productResponse.getPrice();
         assertAll(
-                () -> assertThat(actualName).isEqualTo(expectationName),
-                () -> assertThat(actualPrice).isCloseTo(expectationPrice, Percentage.withPercentage(0.1))
+                () -> assertThat(productId).isNotNull(),
+                () -> assertThat(productName).isEqualTo("제품이름"),
+                () -> assertThat(price).isEqualTo(BigDecimal.valueOf(1000))
         );
     }
 
     @Test
-    void 제품_전체를_조회한다() {
+    void 제품_한_개를_저장하고_전체를_조회한다() {
         // given
-        ProductRequest productToSave = new ProductRequest("제품1", BigDecimal.ZERO);
-        ResponseEntity<Product> savedProduct = testRestTemplate.postForEntity(
-                "/api/products",
-                productToSave,
-                Product.class
-        );
+        ProductRequest request = new ProductRequest("제품이름", BigDecimal.valueOf(1000));
 
         // when
-        ResponseEntity<List<Product>> response = testRestTemplate.exchange(
+        ResponseEntity<ProductResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/products",
+                request,
+                ProductResponse.class
+        );
+        ResponseEntity<List<ProductResponse>> responseToSelect = testRestTemplate.exchange(
                 "/api/products",
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<Product>>() {
+                new ParameterizedTypeReference<List<ProductResponse>>() {
                 }
         );
 
         // then
-        Product actual = savedProduct.getBody();
-        Product expectation = response.getBody()
+        ProductResponse productResponseToSave = responseToSave.getBody();
+        ProductResponse productResponseToSelect = responseToSelect.getBody()
                 .get(0);
-        assertThat(actual).isEqualToComparingFieldByField(expectation);
+        long priceToSave = productResponseToSave.getPrice()
+                .longValue();
+        long priceToSelect = productResponseToSelect.getPrice()
+                .longValue();
+        assertAll(
+                () -> assertThat(productResponseToSave).isEqualToIgnoringGivenFields(productResponseToSelect, "price"),
+                () -> Assertions.assertThat(priceToSave).isEqualTo(priceToSelect)
+        );
     }
 }

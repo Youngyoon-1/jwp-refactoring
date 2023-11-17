@@ -1,12 +1,12 @@
 package kitchenpos.ui;
 
-import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import kitchenpos.application.ProductService;
+import kitchenpos.domain.Product;
 import kitchenpos.dto.request.ProductRequest;
 import kitchenpos.dto.response.ProductResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,8 +43,9 @@ class ProductRestControllerTest extends UiTest {
     @Test
     void 제품을_등록한다() throws Exception {
         // given
-        ProductRequest productRequest = new ProductRequest("제품1", BigDecimal.ZERO);
-        ProductResponse productResponse = new ProductResponse(PRODUCT_1.생성(1L));
+        ProductRequest productRequest = new ProductRequest("제품1", BigDecimal.TEN);
+        Product product = new Product(1L, "제품1", BigDecimal.TEN);
+        ProductResponse productResponse = new ProductResponse(product);
         BDDMockito.given(productService.create(ArgumentMatchers.any(ProductRequest.class)))
                 .willReturn(productResponse);
 
@@ -73,8 +74,11 @@ class ProductRestControllerTest extends UiTest {
     @Test
     void 제품_전체를_조회한다() throws Exception {
         // given
-        ProductResponse productResponse = new ProductResponse(PRODUCT_1.생성(1L));
-        List<ProductResponse> productResponses = Collections.singletonList(productResponse);
+        Product product1 = new Product(1L, "제품1", BigDecimal.ONE);
+        Product product2 = new Product(2L, "제품2", BigDecimal.TEN);
+        ProductResponse productResponse1 = new ProductResponse(product1);
+        ProductResponse productResponse2 = new ProductResponse(product2);
+        List<ProductResponse> productResponses = Arrays.asList(productResponse1, productResponse2);
         BDDMockito.given(productService.list())
                 .willReturn(productResponses);
 

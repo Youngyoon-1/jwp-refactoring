@@ -23,6 +23,10 @@ public class OrderTableResponse {
         return this.id;
     }
 
+    public Long getTableGroupId() {
+        return this.tableGroupId;
+    }
+
     public boolean isEmpty() {
         return this.empty;
     }

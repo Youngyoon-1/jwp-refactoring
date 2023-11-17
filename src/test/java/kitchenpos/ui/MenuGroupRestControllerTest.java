@@ -1,6 +1,5 @@
 package kitchenpos.ui;
 
-import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -15,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Collections;
 import java.util.List;
 import kitchenpos.application.MenuGroupService;
+import kitchenpos.domain.MenuGroup;
 import kitchenpos.dto.request.MenuGroupRequest;
 import kitchenpos.dto.response.MenuGroupResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 @ExtendWith(MockitoExtension.class)
 class MenuGroupRestControllerTest extends UiTest {
-
+    // 컨트롤러 테스트 리펙토링
     @Mock
     private MenuGroupService menuGroupService;
 
@@ -47,7 +47,8 @@ class MenuGroupRestControllerTest extends UiTest {
     void 메뉴_그룹을_생성한다() throws Exception {
         // given
         MenuGroupRequest menuGroupRequest = new MenuGroupRequest("메뉴그룹1");
-        MenuGroupResponse menuGroupResponse = new MenuGroupResponse(MENU_GROUP_1.생성(1L));
+        MenuGroup menuGroup = new MenuGroup(1L, "메뉴그룹1");
+        MenuGroupResponse menuGroupResponse = new MenuGroupResponse(menuGroup);
         given(menuGroupService.create(any(MenuGroupRequest.class)))
                 .willReturn(menuGroupResponse);
 
@@ -76,8 +77,8 @@ class MenuGroupRestControllerTest extends UiTest {
     @Test
     void 메뉴_그룹_전체를_조회한다() throws Exception {
         // given
-        MenuGroupResponse menuGroupResponse = new MenuGroupResponse(MENU_GROUP_1.생성(1L));
-        List<MenuGroupResponse> menuGroupResponses = Collections.singletonList(menuGroupResponse);
+        MenuGroup menuGroup = new MenuGroup(1L, "메뉴그룹");
+        List<MenuGroupResponse> menuGroupResponses = Collections.singletonList(new MenuGroupResponse(menuGroup));
         given(menuGroupService.list())
                 .willReturn(menuGroupResponses);
 

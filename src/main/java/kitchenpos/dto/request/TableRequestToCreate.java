@@ -16,7 +16,7 @@ public class TableRequestToCreate {
     }
 
     public OrderTable toEntity() {
-        return OrderTable.createToSave(this.numberOfGuests, this.empty);
+        return new OrderTable(null, null, this.numberOfGuests, this.empty);
     }
 
     public int getNumberOfGuests() {

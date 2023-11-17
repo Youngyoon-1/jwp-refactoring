@@ -1,23 +1,20 @@
 package kitchenpos.acceptance;
 
-import static kitchenpos.support.fixture.MenuFixture.MENU_1;
-import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
-import static kitchenpos.support.fixture.MenuProductFixture.MENU_PRODUCT;
-import static kitchenpos.support.fixture.ProductFixture.PRODUCT_1;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.withinPercentage;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import kitchenpos.dao.JdbcTemplateMenuGroupDao;
-import kitchenpos.dao.JdbcTemplateProductDao;
-import kitchenpos.domain.Menu;
 import kitchenpos.domain.MenuGroup;
+import kitchenpos.domain.MenuGroupRepository;
 import kitchenpos.domain.MenuProduct;
 import kitchenpos.domain.Product;
+import kitchenpos.domain.ProductRepository;
+import kitchenpos.dto.request.MenuRequest;
+import kitchenpos.dto.response.MenuProductResponse;
+import kitchenpos.dto.response.MenuResponse;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -32,83 +29,96 @@ public class MenuAcceptanceTest {
     private TestRestTemplate testRestTemplate;
 
     @Autowired
-    private JdbcTemplateMenuGroupDao jdbcTemplateMenuGroupDao;
+    private MenuGroupRepository menuGroupRepository;
 
     @Autowired
-    private JdbcTemplateProductDao jdbcTemplateProductDao;
+    private ProductRepository productRepository;
 
     @Test
     void 메뉴를_한_개_등록한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        MenuGroup savedMenuGroup = jdbcTemplateMenuGroupDao.save(menuGroup);
-        Product product = PRODUCT_1.생성();
-        Product savedProduct = jdbcTemplateProductDao.save(product);
-        MenuProduct menuProduct = MENU_PRODUCT.생성(savedProduct);
+        MenuGroup menuGroup = new MenuGroup("메뉴그룹이름");
+        menuGroupRepository.save(menuGroup);
+        Product product = new Product("제품이름", BigDecimal.valueOf(1000));
+        productRepository.save(product);
+        MenuProduct menuProduct = new MenuProduct(product.getId(), 1L);
         List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
-        Menu request = MENU_1.생성(savedMenuGroup, menuProducts);
+        MenuRequest request = new MenuRequest("메뉴이름", BigDecimal.valueOf(1000), menuGroup.getId(), menuProducts);
 
         // when
-        ResponseEntity<Menu> response = testRestTemplate.postForEntity(
+        ResponseEntity<MenuResponse> response = testRestTemplate.postForEntity(
                 "/api/menus",
                 request,
-                Menu.class
+                MenuResponse.class
         );
 
         // then
-        Menu actualBody = request;
-        BigDecimal actualPrice = actualBody.getPrice();
-        List<MenuProduct> actualMenuProducts = actualBody.getMenuProducts();
-        Menu body = response.getBody();
-        assert body != null;
-        BigDecimal price = body.getPrice();
-        List<MenuProduct> menuProductsOfResponse = body.getMenuProducts();
+        MenuResponse menuResponse = response.getBody();
+        long menuId = menuResponse.getId();
+        String menuName = menuResponse.getName();
+        BigDecimal menuPrice = menuResponse.getPrice();
+        long menuGroupId = menuResponse.getMenuGroupId();
+        List<MenuProductResponse> menuProductsResponse = menuResponse.getMenuProducts();
+        MenuProductResponse menuProductResponse = menuProductsResponse.get(0);
+        long menuProductId = menuProductResponse.getSeq();
+        long menuIdOfMenuProduct = menuProductResponse.getMenuId();
+        long productId = menuProductResponse.getProductId();
+        long quantity = menuProductResponse.getQuantity();
         assertAll(
-                () -> assertThat(actualBody).isEqualToIgnoringGivenFields(body, "id", "menuProducts", "price"),
-                () -> assertThat(actualPrice).isCloseTo(price, withinPercentage(0.1)),
-                () -> assertThat(actualMenuProducts).usingRecursiveComparison()
-                        .ignoringFields("seq", "menuId")
-                        .isEqualTo(menuProductsOfResponse)
+                () -> assertThat(menuId).isNotNull(),
+                () -> assertThat(menuName).isEqualTo("메뉴이름"),
+                () -> assertThat(menuPrice).isEqualTo(BigDecimal.valueOf(1000)),
+                () -> assertThat(menuGroupId).isNotNull(),
+                () -> assertThat(menuProductId).isNotNull(),
+                () -> assertThat(menuIdOfMenuProduct).isEqualTo(menuId),
+                () -> assertThat(productId).isNotNull(),
+                () -> assertThat(quantity).isOne()
         );
     }
 
     @Test
-    void 메뉴_전체를_조회한다() {
+    void 메뉴를_한_개_저장한_뒤_전체를_조회한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        MenuGroup savedMenuGroup = jdbcTemplateMenuGroupDao.save(menuGroup);
-        Product product = PRODUCT_1.생성();
-        Product savedProduct = jdbcTemplateProductDao.save(product);
-        MenuProduct menuProduct = MENU_PRODUCT.생성(savedProduct);
+        MenuGroup menuGroup = new MenuGroup("메뉴그룹이름");
+        menuGroupRepository.save(menuGroup);
+        Product product = new Product("제품이름", BigDecimal.valueOf(1000));
+        productRepository.save(product);
+        MenuProduct menuProduct = new MenuProduct(product.getId(), 1L);
         List<MenuProduct> menuProducts = Collections.singletonList(menuProduct);
-        Menu request = MENU_1.생성(savedMenuGroup, menuProducts);
-        ResponseEntity<Menu> savedMenu = testRestTemplate.postForEntity(
-                "/api/menus",
-                request,
-                Menu.class
-        );
+        MenuRequest request = new MenuRequest("메뉴이름", BigDecimal.valueOf(1000), menuGroup.getId(), menuProducts);
 
         // when
-        ResponseEntity<List<Menu>> response = testRestTemplate.exchange(
+        ResponseEntity<MenuResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/menus",
+                request,
+                MenuResponse.class
+        );
+
+        ResponseEntity<List<MenuResponse>> responseToSelect = testRestTemplate.exchange(
                 "/api/menus",
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<Menu>>() {
+                new ParameterizedTypeReference<List<MenuResponse>>() {
                 }
         );
 
         // then
-        Menu actualMenu = savedMenu.getBody();
-        Menu selectedMenu = Objects.requireNonNull(response.getBody())
+        MenuResponse menuResponseToSave = responseToSave.getBody();
+        MenuResponse menuResponseToSelect = responseToSelect.getBody()
                 .get(0);
-        assert actualMenu != null;
-        List<MenuProduct> actualMenuProducts = actualMenu.getMenuProducts();
-        List<MenuProduct> selectedMenuProducts = selectedMenu.getMenuProducts();
+        List<MenuProductResponse> menuProductResponsesToSave = menuResponseToSave.getMenuProducts();
+        List<MenuProductResponse> menuProductResponsesToSelect = menuResponseToSelect.getMenuProducts();
+        long priceToSave = menuResponseToSave.getPrice()
+                .longValue();
+        long priceToSelect = menuResponseToSelect.getPrice()
+                .longValue();
 
         assertAll(
-                () -> assertThat(actualMenu).isEqualToIgnoringGivenFields(selectedMenu, "menuProducts"),
-                () -> assertThat(actualMenuProducts).usingRecursiveComparison()
-                        .isEqualTo(selectedMenuProducts)
+                () -> Assertions.assertThat(menuResponseToSave)
+                        .isEqualToIgnoringGivenFields(menuResponseToSelect, "price", "menuProducts"),
+                () -> Assertions.assertThat(menuProductResponsesToSave).usingRecursiveComparison()
+                        .isEqualTo(menuProductResponsesToSelect),
+                () -> Assertions.assertThat(priceToSave).isEqualTo(priceToSelect)
         );
     }
 }

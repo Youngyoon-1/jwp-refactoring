@@ -50,27 +50,28 @@ class MenuRestControllerTest extends UiTest {
     void 메뉴를_등록한다() throws Exception {
         // given
         List<MenuProduct> menuProducts = new ArrayList<>();
-        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.ZERO, 1L, menuProducts);
-        MenuResponse menuResponse = new MenuResponse(new Menu(1L, "메뉴", BigDecimal.ZERO, 1L, menuProducts));
+        Menu menu = new Menu(1L, "메뉴", BigDecimal.TEN, 1L, menuProducts);
+        MenuResponse menuResponse = new MenuResponse(menu);
         BDDMockito.given(menuService.create(any(MenuRequest.class)))
                 .willReturn(menuResponse);
 
         // when
-        String serializedRequestContent = getObjectMapper().writeValueAsString(menuRequest);
+        MenuRequest menuRequest = new MenuRequest("메뉴", BigDecimal.TEN, 1L, menuProducts);
+        String serializedRequest = getObjectMapper().writeValueAsString(menuRequest);
         ResultActions resultActions = mockMvc.perform(
                 post("/api/menus")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(serializedRequestContent)
+                        .content(serializedRequest)
         );
 
         // then
-        String serializedResponseContent = getObjectMapper().writeValueAsString(menuResponse);
+        String serializedResponse = getObjectMapper().writeValueAsString(menuResponse);
         assertAll(
                 () -> resultActions.andExpect(
                         matchAll(
                                 status().isCreated(),
                                 header().stringValues("location", "/api/menus/1"),
-                                content().string(serializedResponseContent)
+                                content().string(serializedResponse)
                         )
                 ),
                 () -> verify(menuService).create(any(MenuRequest.class))

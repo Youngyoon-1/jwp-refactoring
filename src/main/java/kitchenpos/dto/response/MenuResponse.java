@@ -14,6 +14,9 @@ public class MenuResponse {
     private long menuGroupId;
     private List<MenuProductResponse> menuProducts;
 
+    private MenuResponse() {
+    }
+
     public MenuResponse(final Menu menu) {
         this.id = menu.getId();
         this.name = menu.getName();

@@ -1,22 +1,19 @@
 package kitchenpos.acceptance;
 
-import static kitchenpos.domain.OrderStatus.COOKING;
-import static kitchenpos.support.fixture.MenuFixture.MENU_1;
-import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import kitchenpos.dao.JdbcTemplateMenuDao;
-import kitchenpos.dao.JdbcTemplateMenuGroupDao;
-import kitchenpos.dao.JdbcTemplateOrderTableDao;
 import kitchenpos.domain.Menu;
 import kitchenpos.domain.MenuGroup;
+import kitchenpos.domain.MenuGroupRepository;
+import kitchenpos.domain.MenuRepository;
 import kitchenpos.domain.OrderStatus;
 import kitchenpos.domain.OrderTable;
+import kitchenpos.domain.OrderTableRepository;
 import kitchenpos.dto.request.OrderLineItemRequestToCreate;
 import kitchenpos.dto.request.OrderRequestToChangeOrderStatus;
 import kitchenpos.dto.request.OrderRequestToCreate;
@@ -38,30 +35,28 @@ public class OrderAcceptanceTest {
     private TestRestTemplate testRestTemplate;
 
     @Autowired
-    private JdbcTemplateOrderTableDao jdbcTemplateOrderTable;
+    private OrderTableRepository orderTableRepository;
 
     @Autowired
-    private JdbcTemplateMenuGroupDao jdbcTemplateMenuGroupDao;
+    private MenuGroupRepository menuGroupRepository;
 
     @Autowired
-    private JdbcTemplateMenuDao jdbcTemplateMenuDao;
+    private MenuRepository menuRepository;
 
     @Test
     void 주문_한_개를_등록한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        MenuGroup savedMenuGroup = jdbcTemplateMenuGroupDao.save(menuGroup);
-        Menu menu = MENU_1.생성(savedMenuGroup);
-        Long menuId = jdbcTemplateMenuDao.save(menu)
-                .getId();
-        OrderTable orderTable = ORDER_TABLE.생성();
-        Long orderTableId = jdbcTemplateOrderTable.save(orderTable)
-                .getId();
+        MenuGroup menuGroup = new MenuGroup("메뉴그룹이름");
+        menuGroupRepository.save(menuGroup);
+        Menu menu = new Menu("메뉴이름", BigDecimal.valueOf(1000), menuGroup.getId(), null);
+        menuRepository.save(menu);
+        OrderTable orderTable = new OrderTable(null, null, 1, false);
+        orderTableRepository.save(orderTable);
+        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menu.getId(), 1L);
+        OrderRequestToCreate request = new OrderRequestToCreate(orderTable.getId(),
+                Collections.singletonList(orderLineItemRequest));
 
         // when
-        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menuId, 1L);
-        List<OrderLineItemRequestToCreate> orderLineItemRequests = Collections.singletonList(orderLineItemRequest);
-        OrderRequestToCreate request = new OrderRequestToCreate(orderTableId, orderLineItemRequests);
         ResponseEntity<OrderResponse> response = testRestTemplate.postForEntity(
                 "/api/orders",
                 request,
@@ -70,56 +65,51 @@ public class OrderAcceptanceTest {
 
         // then
         OrderResponse orderResponse = response.getBody();
-        Long actualOrderId = orderResponse.getId();
-        Long actualOrderTableId = orderResponse.getOrderTableId();
-        Long expectationOrderTableId = orderTableId;
-        String actualOrderStatus = orderResponse.getOrderStatus();
-        String expectationOrderStatus = COOKING.name();
-        LocalDateTime actualOrderedTime = orderResponse.getOrderedTime();
-        OrderLineItemResponse actualOrderLineItemResponse = orderResponse.getOrderLineItems()
+        Long orderId = orderResponse.getId();
+        Long orderTableId = orderResponse.getOrderTableId();
+        Long expectationOrderTableId = orderTable.getId();
+        String orderStatus = orderResponse.getOrderStatus();
+        LocalDateTime orderedTime = orderResponse.getOrderedTime();
+        OrderLineItemResponse orderLineItemResponse = orderResponse.getOrderLineItems()
                 .get(0);
-        Long actualOrderLineItemId = actualOrderLineItemResponse.getId();
-        Long actualOrderIdOfOrderLineItem = actualOrderLineItemResponse.getOrderId();
-        Long actualMenuId = actualOrderLineItemResponse.getMenuId();
-        Long expectationMenuId = menuId;
-        Long actualQuantity = actualOrderLineItemResponse.getQuantity();
+        Long orderLineItemId = orderLineItemResponse.getSeq();
+        Long orderIdOfOrderLineItem = orderLineItemResponse.getOrderId();
+        Long menuId = orderLineItemResponse.getMenuId();
+        Long expectationMenuId = menu.getId();
+        Long quantity = orderLineItemResponse.getQuantity();
         Long expectationQuantity = orderLineItemRequest.getQuantity();
-        Long i = null;
         assertAll(
-                () -> assertThat(i).isEqualTo(null),
-                () -> assertThat(actualOrderId).isEqualTo(actualOrderIdOfOrderLineItem),
-                () -> assertThat(actualOrderTableId).isEqualTo(expectationOrderTableId),
-                () -> assertThat(actualOrderStatus).isEqualTo(expectationOrderStatus),
-                () -> assertThat(actualOrderedTime).isNotNull(),
-                () -> assertThat(actualOrderLineItemId).isNotNull(),
-                () -> assertThat(actualOrderIdOfOrderLineItem).isNotNull(),
-                () -> assertThat(actualMenuId).isEqualTo(expectationMenuId),
-                () -> assertThat(actualQuantity).isEqualTo(expectationQuantity)
+                () -> assertThat(orderId).isNotNull(),
+                () -> assertThat(orderTableId).isEqualTo(expectationOrderTableId),
+                () -> assertThat(orderStatus).isEqualTo(OrderStatus.COOKING.name()),
+                () -> assertThat(orderedTime).isNotNull(),
+                () -> assertThat(orderLineItemId).isNotNull(),
+                () -> assertThat(orderIdOfOrderLineItem).isEqualTo(orderId),
+                () -> assertThat(menuId).isEqualTo(expectationMenuId),
+                () -> assertThat(quantity).isEqualTo(expectationQuantity)
         );
     }
 
     @Test
-    void 주문_전체를_조회한다() {
+    void 주문_한_개를_등록하고_전체를_조회한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        MenuGroup savedMenuGroup = jdbcTemplateMenuGroupDao.save(menuGroup);
-        Menu menu = MENU_1.생성(savedMenuGroup);
-        Long menuId = jdbcTemplateMenuDao.save(menu)
-                .getId();
-        OrderTable orderTable = ORDER_TABLE.생성();
-        long orderTableId = jdbcTemplateOrderTable.save(orderTable)
-                .getId();
-        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menuId, 1L);
-        List<OrderLineItemRequestToCreate> orderLineItemRequests = Collections.singletonList(orderLineItemRequest);
-        OrderRequestToCreate orderRequest = new OrderRequestToCreate(orderTableId, orderLineItemRequests);
-        ResponseEntity<OrderResponse> responseOfCreatedOrder = testRestTemplate.postForEntity(
-                "/api/orders",
-                orderRequest,
-                OrderResponse.class
-        );
+        MenuGroup menuGroup = new MenuGroup("메뉴그룹이름");
+        menuGroupRepository.save(menuGroup);
+        Menu menu = new Menu("메뉴이름", BigDecimal.valueOf(1000), menuGroup.getId(), null);
+        menuRepository.save(menu);
+        OrderTable orderTable = new OrderTable(null, null, 1, false);
+        orderTableRepository.save(orderTable);
+        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menu.getId(), 1L);
+        OrderRequestToCreate request = new OrderRequestToCreate(orderTable.getId(),
+                Collections.singletonList(orderLineItemRequest));
 
         // when
-        ResponseEntity<List<OrderResponse>> responseOfSelectedOrder = testRestTemplate.exchange(
+        ResponseEntity<OrderResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/orders",
+                request,
+                OrderResponse.class
+        );
+        ResponseEntity<List<OrderResponse>> responseToSelect = testRestTemplate.exchange(
                 "/api/orders",
                 HttpMethod.GET,
                 null,
@@ -128,69 +118,62 @@ public class OrderAcceptanceTest {
         );
 
         // then
-        OrderResponse actualResponse = responseOfSelectedOrder.getBody()
+        OrderResponse orderResponseToSave = responseToSave.getBody();
+        OrderResponse orderResponseToSelect = responseToSelect.getBody()
                 .get(0);
-        OrderResponse expectationResponse = responseOfCreatedOrder.getBody();
-        OrderLineItemResponse actualOrderLineItem = actualResponse.getOrderLineItems()
+        OrderLineItemResponse orderLineItemResponseToSave = orderResponseToSave.getOrderLineItems()
                 .get(0);
-        OrderLineItemResponse expectationOrderLineItem = expectationResponse.getOrderLineItems()
+        OrderLineItemResponse orderLineItemResponseToSelect = orderResponseToSelect.getOrderLineItems()
                 .get(0);
         assertAll(
-                () -> assertThat(actualResponse).isEqualToIgnoringGivenFields(expectationResponse, "orderLineItems"),
-                () -> assertThat(actualOrderLineItem).isEqualToComparingFieldByField(expectationOrderLineItem)
+                () -> assertThat(orderResponseToSave).isEqualToIgnoringGivenFields(orderResponseToSelect,
+                        "orderLineItems"),
+                () -> assertThat(orderLineItemResponseToSave).isEqualToComparingFieldByField(
+                        orderLineItemResponseToSelect)
         );
     }
 
     @Test
-    void 주문_상태를_변경한다() {
+    void 주문을_한_개_저장하고_그_주문의_상태를_식사로_변경한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성();
-        MenuGroup savedMenuGroup = jdbcTemplateMenuGroupDao.save(menuGroup);
-        Menu menu = MENU_1.생성(savedMenuGroup);
-        Long menuId = jdbcTemplateMenuDao.save(menu)
-                .getId();
-        OrderTable orderTable = ORDER_TABLE.생성();
-        long orderTableId = jdbcTemplateOrderTable.save(orderTable)
-                .getId();
-        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menuId, 1L);
-        List<OrderLineItemRequestToCreate> orderLineItemRequests = Collections.singletonList(orderLineItemRequest);
-        OrderRequestToCreate orderRequestToCreate = new OrderRequestToCreate(orderTableId, orderLineItemRequests);
-        ResponseEntity<OrderResponse> orderResponseOfCreatedOrder = testRestTemplate.postForEntity(
-                "/api/orders",
-                orderRequestToCreate,
-                OrderResponse.class
-        );
+        MenuGroup menuGroup = new MenuGroup("메뉴그룹이름");
+        menuGroupRepository.save(menuGroup);
+        Menu menu = new Menu("메뉴이름", BigDecimal.valueOf(1000), menuGroup.getId(), null);
+        menuRepository.save(menu);
+        OrderTable orderTable = new OrderTable(null, null, 1, false);
+        orderTableRepository.save(orderTable);
+        OrderLineItemRequestToCreate orderLineItemRequest = new OrderLineItemRequestToCreate(menu.getId(), 1L);
+        OrderRequestToCreate requestToSave = new OrderRequestToCreate(orderTable.getId(),
+                Collections.singletonList(orderLineItemRequest));
 
         // when
-        OrderResponse savedOrder = orderResponseOfCreatedOrder.getBody();
-        Long orderId = savedOrder.getId();
-        OrderRequestToChangeOrderStatus orderRequest = new OrderRequestToChangeOrderStatus(OrderStatus.MEAL.name());
-        ResponseEntity<OrderResponse> orderResponse = testRestTemplate.exchange(
+        ResponseEntity<OrderResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/orders",
+                requestToSave,
+                OrderResponse.class
+        );
+        OrderResponse orderResponseToSave = responseToSave.getBody();
+        long orderId = orderResponseToSave.getId();
+        OrderRequestToChangeOrderStatus requestToChange = new OrderRequestToChangeOrderStatus(OrderStatus.MEAL.name());
+        ResponseEntity<OrderResponse> responseToChange = testRestTemplate.exchange(
                 "/api/orders/" + orderId + "/order-status",
                 HttpMethod.PUT,
-                new HttpEntity<>(orderRequest),
+                new HttpEntity<>(requestToChange),
                 OrderResponse.class
         );
 
         // then
-        OrderResponse actualOrderResponse = orderResponse.getBody();
-        Long actualOrderId = actualOrderResponse.getId();
-        Long actualOrderTableId = actualOrderResponse.getOrderTableId();
-        String actualOrderStatus = actualOrderResponse.getOrderStatus();
-        String expectationOrderStatus = orderRequest.getOrderStatus();
-        LocalDateTime actualOrderedTime = actualOrderResponse.getOrderedTime();
-        LocalDateTime expectationOrderedTime = savedOrder.getOrderedTime();
-        OrderLineItemResponse actualOrderLineItemResponse = actualOrderResponse.getOrderLineItems()
+        OrderResponse orderResponseToChange = responseToChange.getBody();
+        String orderStatus = orderResponseToChange.getOrderStatus();
+        OrderLineItemResponse orderLineItemToSave = orderResponseToSave.getOrderLineItems()
                 .get(0);
-        OrderLineItemResponse expectationOrderLineItemResponse = savedOrder.getOrderLineItems()
+        OrderLineItemResponse orderLineItemToChange = orderResponseToChange.getOrderLineItems()
                 .get(0);
         assertAll(
-                () -> assertThat(actualOrderId).isNotNull(),
-                () -> assertThat(actualOrderTableId).isEqualTo(orderTableId),
-                () -> assertThat(actualOrderStatus).isEqualTo(expectationOrderStatus),
-                () -> assertThat(actualOrderedTime).isEqualTo(expectationOrderedTime),
-                () -> assertThat(actualOrderLineItemResponse).isEqualToComparingFieldByField(
-                        expectationOrderLineItemResponse)
+                () -> assertThat(orderResponseToSave).isEqualToIgnoringGivenFields(orderResponseToChange,
+                        "orderStatus", "orderLineItems"),
+                () -> assertThat(orderStatus).isEqualTo(OrderStatus.MEAL.name()),
+                () -> assertThat(orderLineItemToSave).isEqualToComparingFieldByField(orderLineItemToChange)
         );
     }
 }

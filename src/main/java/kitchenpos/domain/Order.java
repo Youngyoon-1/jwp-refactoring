@@ -2,16 +2,35 @@ package kitchenpos.domain;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import org.springframework.util.CollectionUtils;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "orders")
 public class Order {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "order_table_id")
     private Long orderTableId;
+
+    @Column(name = "order_status")
     private String orderStatus;
+
+    @Column(name = "ordered_time")
     private LocalDateTime orderedTime;
+
+    @OneToMany
+    @JoinColumn(name = "order_id")
     private List<OrderLineItem> orderLineItems;
 
     public Order() {
@@ -24,13 +43,6 @@ public class Order {
         this.orderStatus = orderStatus;
         this.orderedTime = orderedTime;
         this.orderLineItems = orderLineItems;
-    }
-
-    public static Order createToSave(final long orderTableId, final List<OrderLineItem> orderLineItems) {
-        if (CollectionUtils.isEmpty(orderLineItems)) {
-            throw new IllegalArgumentException();
-        }
-        return new Order(null, orderTableId, OrderStatus.COOKING.name(), LocalDateTime.now(), orderLineItems);
     }
 
     public Long getId() {
@@ -79,16 +91,12 @@ public class Order {
                 .collect(Collectors.toList());
     }
 
-    public void validateToSave(final long menuCount) {
-        if (this.orderLineItems.size() != menuCount) {
-            throw new IllegalArgumentException();
-        }
+    public void updateOrderStatus(final String orderStatus) {
+        this.orderStatus = OrderStatus.valueOf(orderStatus).name();
     }
 
-    public void updateOrderStatus(final String orderStatus) {
-        if (Objects.equals(OrderStatus.COMPLETION.name(), this.orderStatus)) {
-            throw new IllegalArgumentException();
-        }
-        this.orderStatus = OrderStatus.valueOf(orderStatus).name();
+    public void updateToSave() {
+        this.orderStatus = OrderStatus.COOKING.name();
+        this.orderedTime = LocalDateTime.now();
     }
 }

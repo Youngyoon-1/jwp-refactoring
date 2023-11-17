@@ -14,7 +14,6 @@ public class AcceptanceTestExecutionListener extends AbstractTestExecutionListen
         executeQueries(jdbcTemplate, truncateQueries);
     }
 
-
     private JdbcTemplate getJdbcTemplate(final TestContext testContext) {
         return testContext.getApplicationContext()
                 .getBean(JdbcTemplate.class);

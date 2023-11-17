@@ -1,10 +1,28 @@
 package kitchenpos.domain;
 
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "order_table")
 public class OrderTable {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "table_group_id")
     private Long tableGroupId;
+
+    @Column(name = "number_of_guests")
     private int numberOfGuests;
+
+    @Column(name = "empty")
     private boolean empty;
 
     public OrderTable() {
@@ -17,21 +35,12 @@ public class OrderTable {
         this.empty = empty;
     }
 
-    public static OrderTable createToSave(final int numberOfGuests, final boolean empty) {
-        return new OrderTable(null, null, numberOfGuests, empty);
+    public OrderTable(final Long id) {
+        this(id, null, 0, false);
     }
 
-    public static OrderTable createToUpdateNumberOfGuests(final int numberOfGuests) {
-        if (numberOfGuests < 0) {
-            throw new IllegalArgumentException();
-        }
-        return new OrderTable(null, null, numberOfGuests, false);
-    }
-
-    public static OrderTable createToSaveTableGroup(final Long id) {
-        final OrderTable orderTable = new OrderTable();
-        orderTable.id = id;
-        return orderTable;
+    public OrderTable(final int numberOfGuests) {
+        this(null, null, numberOfGuests, false);
     }
 
     public Long getId() {
@@ -62,30 +71,20 @@ public class OrderTable {
         return empty;
     }
 
-    public void setEmpty(final boolean empty) {
+    public void updateEmpty(final boolean empty) {
         this.empty = empty;
     }
 
-    public void validateToUpdateEmpty() {
-        if (this.tableGroupId != null) {
-            throw new IllegalArgumentException();
-        }
-    }
-
     public void updateNumberOfGuests(final OrderTable other) {
-        if (this.empty) {
-            throw new IllegalArgumentException();
-        }
-        this.numberOfGuests = other.getNumberOfGuests();
+        this.numberOfGuests = other.numberOfGuests;
     }
 
-    public void validateToSaveOrder() {
-        if (this.empty) {
-            throw new IllegalArgumentException();
-        }
+    public void updateTableGroupId(final long tableGroupId) {
+        this.tableGroupId = tableGroupId;
     }
 
-    public void updateTableGroupId(final TableGroup tableGroup) {
-        this.tableGroupId = tableGroup.getId();
+    public void ungroup() {
+        this.tableGroupId = null;
+        this.empty = false;
     }
 }

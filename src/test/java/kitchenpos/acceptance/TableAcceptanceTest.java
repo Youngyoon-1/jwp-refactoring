@@ -1,11 +1,10 @@
 package kitchenpos.acceptance;
 
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.util.List;
-import kitchenpos.domain.OrderTable;
+import kitchenpos.dto.request.TableRequestToChangeEmpty;
 import kitchenpos.dto.request.TableRequestToChangeNumberOfGuests;
 import kitchenpos.dto.request.TableRequestToCreate;
 import kitchenpos.dto.response.OrderTableResponse;
@@ -29,104 +28,117 @@ public class TableAcceptanceTest {
     @Test
     void 주문_테이블을_생성한다() {
         // given
-        OrderTable request = ORDER_TABLE.생성();
+        TableRequestToCreate request = new TableRequestToCreate(1, false);
 
         // when
-        ResponseEntity<OrderTable> response = testRestTemplate.postForEntity(
+        ResponseEntity<OrderTableResponse> response = testRestTemplate.postForEntity(
                 "/api/tables",
                 request,
-                OrderTable.class
+                OrderTableResponse.class
         );
 
         // then
-        OrderTable actual = request;
-        OrderTable expectation = response.getBody();
-        HttpStatus expectationHttpStatus = response.getStatusCode();
+        HttpStatus httpStatus = response.getStatusCode();
+        OrderTableResponse orderTableResponse = response.getBody();
+        long orderTableId = orderTableResponse.getId();
+        Long tableGroupId = orderTableResponse.getTableGroupId();
+        int numberOfGuests = orderTableResponse.getNumberOfGuests();
+        boolean empty = orderTableResponse.isEmpty();
         assertAll(
-                () -> assertThat(HttpStatus.CREATED).isEqualTo(expectationHttpStatus),
-                () -> assertThat(actual).isEqualToIgnoringGivenFields(expectation, "id")
+                () -> assertThat(httpStatus).isEqualTo(HttpStatus.CREATED),
+                () -> assertThat(orderTableId).isNotNull(),
+                () -> assertThat(tableGroupId).isNull(),
+                () -> assertThat(numberOfGuests).isOne(),
+                () -> assertThat(empty).isFalse()
         );
     }
 
     @Test
     void 주문_테이블_한_개_저장하고_주문_테이블_전체를_조회한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE.생성();
-        ResponseEntity<OrderTable> savedOrderTable = testRestTemplate.postForEntity(
-                "/api/tables",
-                orderTable,
-                OrderTable.class
-        );
+        TableRequestToCreate request = new TableRequestToCreate(1, false);
 
         // when
-        ResponseEntity<List<OrderTable>> response = testRestTemplate.exchange(
+        ResponseEntity<OrderTableResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/tables",
+                request,
+                OrderTableResponse.class
+        );
+        ResponseEntity<List<OrderTableResponse>> responseToSelect = testRestTemplate.exchange(
                 "/api/tables",
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<OrderTable>>() {
+                new ParameterizedTypeReference<List<OrderTableResponse>>() {
                 }
         );
 
         // then
-        OrderTable actual = savedOrderTable.getBody();
-        OrderTable expectation = response.getBody()
+        OrderTableResponse orderTableResponseToSave = responseToSave.getBody();
+        OrderTableResponse orderTableResponseToSelect = responseToSelect.getBody()
                 .get(0);
-        assertThat(actual).isEqualToComparingFieldByField(expectation);
+        assertThat(orderTableResponseToSave).isEqualToComparingFieldByField(orderTableResponseToSelect);
     }
 
     @Test
     void 주문_테이블_한_개를_저장하고_주문_테이블의_자리_상태를_변경한다() {
         // given
-        TableRequestToCreate orderTableRequestToSave = new TableRequestToCreate(1, false);
-        ResponseEntity<OrderTableResponse> savedOrderTable = testRestTemplate.postForEntity(
-                "/api/tables",
-                orderTableRequestToSave,
-                OrderTableResponse.class
-        );
+        TableRequestToCreate requestToSave = new TableRequestToCreate(1, false);
 
         // when
-        long orderTableId = savedOrderTable.getBody()
-                .getId();
-        TableRequestToCreate orderTableRequestToChangeEmpty = new TableRequestToCreate(0, true);
-        ResponseEntity<OrderTableResponse> changedOrderTable = testRestTemplate.exchange(
+        ResponseEntity<OrderTableResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/tables",
+                requestToSave,
+                OrderTableResponse.class
+        );
+        OrderTableResponse orderTableResponseToSave = responseToSave.getBody();
+        long orderTableId = orderTableResponseToSave.getId();
+        TableRequestToChangeEmpty requestToChange = new TableRequestToChangeEmpty(true);
+        ResponseEntity<OrderTableResponse> responseToChange = testRestTemplate.exchange(
                 "/api/tables/" + orderTableId + "/empty",
                 HttpMethod.PUT,
-                new HttpEntity<>(orderTableRequestToChangeEmpty),
+                new HttpEntity<>(requestToChange),
                 OrderTableResponse.class
         );
 
         // then
-        boolean changedEmpty = changedOrderTable.getBody()
-                .isEmpty();
-        Assertions.assertThat(changedEmpty).isTrue();
+        OrderTableResponse orderTableResponseToChange = responseToChange.getBody();
+        boolean empty = orderTableResponseToChange.isEmpty();
+        assertAll(
+                () -> Assertions.assertThat(orderTableResponseToSave)
+                        .isEqualToIgnoringGivenFields(orderTableResponseToChange, "empty"),
+                () -> Assertions.assertThat(empty).isTrue()
+        );
     }
 
     @Test
     void 주문_테이블_한_개를_저장하고_저장한_주문_테이블의_손님_수를_수정한다() {
         // given
-        TableRequestToCreate tableRequestToCreate = new TableRequestToCreate(1, false);
-        ResponseEntity<OrderTableResponse> savedOrderTable = testRestTemplate.postForEntity(
-                "/api/tables",
-                tableRequestToCreate,
-                OrderTableResponse.class
-        );
+        TableRequestToCreate requestToSave = new TableRequestToCreate(1, false);
 
         // when
-        TableRequestToChangeNumberOfGuests tableRequestToChangeNumberOfGuests = new TableRequestToChangeNumberOfGuests(
+        ResponseEntity<OrderTableResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/tables",
+                requestToSave,
+                OrderTableResponse.class
+        );
+        TableRequestToChangeNumberOfGuests requestToChangeNumberOfGuests = new TableRequestToChangeNumberOfGuests(
                 2);
-        long orderTableId = savedOrderTable.getBody()
-                .getId();
-        ResponseEntity<OrderTableResponse> response = testRestTemplate.exchange(
+        OrderTableResponse orderTableResponseToSave = responseToSave.getBody();
+        long orderTableId = orderTableResponseToSave.getId();
+        ResponseEntity<OrderTableResponse> responseToChange = testRestTemplate.exchange(
                 "/api/tables/" + orderTableId + "/number-of-guests",
                 HttpMethod.PUT,
-                new HttpEntity<>(tableRequestToChangeNumberOfGuests),
+                new HttpEntity<>(requestToChangeNumberOfGuests),
                 OrderTableResponse.class
         );
 
         // then
-        int actualNumberOfGuests = tableRequestToChangeNumberOfGuests.getNumberOfGuests();
-        int expectationNumberOfGuests = response.getBody()
-                .getNumberOfGuests();
-        assertThat(actualNumberOfGuests).isEqualTo(expectationNumberOfGuests);
+        OrderTableResponse orderTableResponseToChange = responseToChange.getBody();
+        int numberOfGuests = orderTableResponseToChange.getNumberOfGuests();
+        assertAll(
+                () -> Assertions.assertThat(orderTableResponseToSave)
+                        .isEqualToIgnoringGivenFields(orderTableResponseToChange, "numberOfGuests"),
+                () -> Assertions.assertThat(numberOfGuests).isEqualTo(2)
+        );
     }
 }

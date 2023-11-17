@@ -18,6 +18,6 @@ public class TableRequestToChangeNumberOfGuests {
     }
 
     public OrderTable toEntity() {
-        return OrderTable.createToUpdateNumberOfGuests(this.numberOfGuests);
+        return new OrderTable(this.numberOfGuests);
     }
 }

@@ -1,14 +1,12 @@
 package kitchenpos.application;
 
-import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.List;
-import kitchenpos.dao.OrderDao;
-import kitchenpos.dao.OrderTableDao;
-import kitchenpos.dao.TableGroupDao;
-import kitchenpos.domain.OrderStatus;
 import kitchenpos.domain.OrderTable;
-import kitchenpos.domain.OrderTables;
+import kitchenpos.domain.OrderTableRepository;
 import kitchenpos.domain.TableGroup;
+import kitchenpos.domain.TableGroupRepository;
+import kitchenpos.domain.TableGroupValidator;
 import kitchenpos.dto.request.TableGroupRequest;
 import kitchenpos.dto.response.TableGroupResponse;
 import org.springframework.stereotype.Service;
@@ -18,46 +16,40 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TableGroupService {
 
-    private final OrderDao orderDao;
-    private final OrderTableDao orderTableDao;
-    private final TableGroupDao tableGroupDao;
+    private final OrderTableRepository orderTableRepository;
+    private final TableGroupRepository tableGroupRepository;
+    private final TableGroupValidator tableGroupValidator;
 
-    public TableGroupService(final OrderDao orderDao, final OrderTableDao orderTableDao,
-                             final TableGroupDao tableGroupDao) {
-        this.orderDao = orderDao;
-        this.orderTableDao = orderTableDao;
-        this.tableGroupDao = tableGroupDao;
+    public TableGroupService(final OrderTableRepository orderTableRepository,
+                             final TableGroupRepository tableGroupRepository,
+                             final TableGroupValidator tableGroupValidator) {
+        this.orderTableRepository = orderTableRepository;
+        this.tableGroupRepository = tableGroupRepository;
+        this.tableGroupValidator = tableGroupValidator;
     }
 
     @Transactional
     public TableGroupResponse create(final TableGroupRequest tableGroupRequest) {
         final TableGroup tableGroup = tableGroupRequest.toEntity();
-        final List<Long> orderTableIds = tableGroup.collectOrderTableIds();
-        final List<OrderTable> savedOrderTables = orderTableDao.findAllByIdIn(orderTableIds);
-        tableGroup.validateToSave(savedOrderTables);
-        OrderTables orderTables = OrderTables.createToSaveTableGroup(savedOrderTables);
-        final TableGroup savedTableGroup = tableGroupDao.save(tableGroup);
-        final List<OrderTable> orderTablesToSave = orderTables.getOrderTables();
-        for (final OrderTable orderTableToSave : orderTablesToSave) {
-            orderTableToSave.updateTableGroupId(savedTableGroup);
-            orderTableDao.save(orderTableToSave);
+        tableGroupValidator.validateToCreate(tableGroup);
+        final List<OrderTable> orderTables = orderTableRepository.findAllByIdIn(tableGroup.collectOrderTableIds());
+        tableGroupValidator.validateToCreate(tableGroup.getOrderTables(), orderTables);
+        tableGroup.updateCreatedDate(LocalDateTime.now());
+        final TableGroup savedTableGroup = tableGroupRepository.save(tableGroup);
+        final long tableGroupId = savedTableGroup.getId();
+        for (final OrderTable orderTable : orderTables) {
+            orderTable.updateTableGroupId(tableGroupId);
         }
-        savedTableGroup.setOrderTables(orderTablesToSave);
-
+        savedTableGroup.setOrderTables(orderTables);
         return new TableGroupResponse(savedTableGroup);
     }
 
     @Transactional
     public void ungroup(final Long tableGroupId) {
-        final List<OrderTable> savedOrderTables = orderTableDao.findAllByTableGroupId(tableGroupId);
-        final OrderTables orderTables = OrderTables.createToUngroup(savedOrderTables);
-        final List<Long> orderTableIds = orderTables.collectIds();
-        if (orderDao.existsByOrderTableIdInAndOrderStatusIn(
-                orderTableIds, Arrays.asList(OrderStatus.COOKING.name(), OrderStatus.MEAL.name()))) {
-            throw new IllegalArgumentException();
-        }
-        for (final OrderTable orderTable : orderTables.getOrderTables()) {
-            orderTableDao.save(orderTable);
+        final List<OrderTable> orderTables = orderTableRepository.findAllByTableGroupId(tableGroupId);
+        tableGroupValidator.validateToUngroup(orderTables);
+        for (final OrderTable orderTable : orderTables) {
+            orderTable.ungroup();
         }
     }
 }

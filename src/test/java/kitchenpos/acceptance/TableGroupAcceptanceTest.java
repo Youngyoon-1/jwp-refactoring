@@ -1,14 +1,17 @@
 package kitchenpos.acceptance;
 
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
-import static kitchenpos.support.fixture.TableGroupFixture.TABLE_GROUP;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import kitchenpos.dao.JdbcTemplateOrderTableDao;
 import kitchenpos.domain.OrderTable;
-import kitchenpos.domain.TableGroup;
+import kitchenpos.domain.OrderTableRepository;
+import kitchenpos.dto.request.TableGroupRequest;
+import kitchenpos.dto.request.TableRequestToCreateTableGroup;
+import kitchenpos.dto.response.OrderTableResponse;
+import kitchenpos.dto.response.TableGroupResponse;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -24,51 +27,78 @@ public class TableGroupAcceptanceTest {
     private TestRestTemplate testRestTemplate;
 
     @Autowired
-    private JdbcTemplateOrderTableDao jdbcTemplateOrderTableDao;
+    private OrderTableRepository orderTableRepository;
 
     @Test
     void 테이블_그룹을_생성한다() {
         // given
-        OrderTable orderTable = ORDER_TABLE.생성(true);
-        OrderTable savedOrderTable1 = jdbcTemplateOrderTableDao.save(orderTable);
-        OrderTable savedOrderTable2 = jdbcTemplateOrderTableDao.save(orderTable);
-        List<OrderTable> orderTables = Arrays.asList(savedOrderTable1, savedOrderTable2);
-
-        TableGroup request = TABLE_GROUP.생성(orderTables);
+        long orderTable1Id = orderTableRepository.save(new OrderTable(null, null, 0, true))
+                .getId();
+        long orderTable2Id = orderTableRepository.save(new OrderTable(null, null, 0, true))
+                .getId();
+        List<TableRequestToCreateTableGroup> tableRequests = Arrays.asList(
+                new TableRequestToCreateTableGroup(orderTable1Id),
+                new TableRequestToCreateTableGroup(orderTable2Id));
+        TableGroupRequest request = new TableGroupRequest(tableRequests);
 
         // when
-        ResponseEntity<TableGroup> response = testRestTemplate.postForEntity(
+        ResponseEntity<TableGroupResponse> response = testRestTemplate.postForEntity(
                 "/api/table-groups",
                 request,
-                TableGroup.class
+                TableGroupResponse.class
         );
 
         // then
-        List<OrderTable> actualOrderTables = request.getOrderTables();
-        List<OrderTable> expectationOrderTables = response.getBody()
-                .getOrderTables();
-        assertThat(actualOrderTables).usingRecursiveComparison()
-                .ignoringFields("tableGroupId", "empty")
-                .isEqualTo(expectationOrderTables);
+        TableGroupResponse tableGroupResponse = response.getBody();
+        long actualOrderGroupId = tableGroupResponse.getId();
+        LocalDateTime actualCreatedDate = tableGroupResponse.getCreatedDate();
+        List<OrderTableResponse> actualOrderTables = tableGroupResponse.getOrderTables();
+        OrderTableResponse actualOrderTable1 = actualOrderTables.get(0);
+        long actualOrderTable1Id = actualOrderTable1.getId();
+        long actualOrderTable1GroupId = actualOrderTable1.getTableGroupId();
+        long actualOrderTable1NumberOfGuests = actualOrderTable1.getNumberOfGuests();
+        boolean actualOrderTable1Empty = actualOrderTable1.isEmpty();
+        OrderTableResponse actualOrderTable2 = actualOrderTables.get(1);
+        long actualOrderTable2Id = actualOrderTable2.getId();
+        long actualOrderTable2GroupId = actualOrderTable2.getTableGroupId();
+        long actualOrderTable2NumberOfGuests = actualOrderTable2.getNumberOfGuests();
+        boolean actualOrderTable2Empty = actualOrderTable2.isEmpty();
+
+        assertAll(
+                () -> Assertions.assertThat(actualOrderGroupId).isNotNull(),
+                () -> Assertions.assertThat(actualCreatedDate).isNotNull(),
+                () -> Assertions.assertThat(actualOrderTable1Id).isNotNull(),
+                () -> Assertions.assertThat(actualOrderTable1GroupId).isEqualTo(actualOrderGroupId),
+                () -> Assertions.assertThat(actualOrderTable1NumberOfGuests).isZero(),
+                () -> Assertions.assertThat(actualOrderTable1Empty).isTrue(),
+                () -> Assertions.assertThat(actualOrderTable2Id).isNotNull(),
+                () -> Assertions.assertThat(actualOrderTable2GroupId).isEqualTo(actualOrderGroupId),
+                () -> Assertions.assertThat(actualOrderTable2NumberOfGuests).isZero(),
+                () -> Assertions.assertThat(actualOrderTable2Empty).isTrue()
+        );
     }
 
     @Test
-    void 테이블_그룹을_삭제한다() {
-        OrderTable orderTable = ORDER_TABLE.생성(true);
-        OrderTable savedOrderTable1 = jdbcTemplateOrderTableDao.save(orderTable);
-        OrderTable savedOrderTable2 = jdbcTemplateOrderTableDao.save(orderTable);
-        List<OrderTable> orderTables = Arrays.asList(savedOrderTable1, savedOrderTable2);
-        TableGroup tableGroup = TABLE_GROUP.생성(orderTables);
-        ResponseEntity<TableGroup> savedTableGroup = testRestTemplate.postForEntity(
-                "/api/table-groups",
-                tableGroup,
-                TableGroup.class
-        );
+    void 테이블_그룹을_저장한_뒤_삭제한다() {
+        // given
+        long orderTable1Id = orderTableRepository.save(new OrderTable(null, null, 0, true))
+                .getId();
+        long orderTable2Id = orderTableRepository.save(new OrderTable(null, null, 0, true))
+                .getId();
+        List<TableRequestToCreateTableGroup> tableRequests = Arrays.asList(
+                new TableRequestToCreateTableGroup(orderTable1Id),
+                new TableRequestToCreateTableGroup(orderTable2Id));
+        TableGroupRequest requestToSave = new TableGroupRequest(tableRequests);
 
         // when
-        long tableGroupId = savedTableGroup.getBody()
-                .getId();
-        ResponseEntity<Void> response = testRestTemplate.exchange(
+        ResponseEntity<TableGroupResponse> responseToSave = testRestTemplate.postForEntity(
+                "/api/table-groups",
+                requestToSave,
+                TableGroupResponse.class
+        );
+        TableGroupResponse tableGroupResponseToSave = responseToSave.getBody();
+        long tableGroupId = tableGroupResponseToSave.getId();
+        ResponseEntity<Void> responseToDelete = testRestTemplate.exchange(
                 "/api/table-groups/" + tableGroupId,
                 HttpMethod.DELETE,
                 null,
@@ -76,7 +106,11 @@ public class TableGroupAcceptanceTest {
         );
 
         // then
-        HttpStatus expectation = response.getStatusCode();
-        assertThat(HttpStatus.NO_CONTENT).isEqualTo(expectation);
+        HttpStatus httpStatusToSave = responseToSave.getStatusCode();
+        HttpStatus httpStatusToDelete = responseToDelete.getStatusCode();
+        assertAll(
+                () -> Assertions.assertThat(httpStatusToSave).isEqualTo(HttpStatus.CREATED),
+                () -> Assertions.assertThat(httpStatusToDelete).isEqualTo(HttpStatus.NO_CONTENT)
+        );
     }
 }

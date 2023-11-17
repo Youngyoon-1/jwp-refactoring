@@ -118,10 +118,9 @@ class OrderRestControllerTest extends UiTest {
     @Test
     void 주문_상태를_식사로_변경한다() throws Exception {
         // given
-        long orderId = 1L;
-        Order savedOrder = new Order(orderId, 1L, OrderStatus.MEAL.name(), LocalDateTime.now(), new ArrayList<>());
+        Order savedOrder = new Order(1L, 1L, OrderStatus.MEAL.name(), LocalDateTime.now(), new ArrayList<>());
         OrderResponse orderResponse = new OrderResponse(savedOrder);
-        given(orderService.changeOrderStatus(ArgumentMatchers.eq(orderId), any(OrderRequestToChangeOrderStatus.class)))
+        given(orderService.changeOrderStatus(ArgumentMatchers.eq(1L), any(OrderRequestToChangeOrderStatus.class)))
                 .willReturn(orderResponse);
 
         // when
@@ -143,7 +142,7 @@ class OrderRestControllerTest extends UiTest {
                         )
                 ),
                 () -> BDDMockito.verify(orderService)
-                        .changeOrderStatus(ArgumentMatchers.eq(orderId), any(OrderRequestToChangeOrderStatus.class))
+                        .changeOrderStatus(ArgumentMatchers.eq(1L), any(OrderRequestToChangeOrderStatus.class))
         );
     }
 }

@@ -1,6 +1,5 @@
 package kitchenpos.ui;
 
-import static kitchenpos.support.fixture.OrderTableFixture.ORDER_TABLE;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.util.Collections;
@@ -45,7 +44,7 @@ class TableRestControllerTest extends UiTest {
     @Test
     void 주문_테이블을_생성한다() throws Exception {
         // given
-        OrderTable orderTableRequest = ORDER_TABLE.생성();
+        OrderTable orderTableRequest = new OrderTable(null, null, 1, false);
         OrderTable orderTable = new OrderTable(1L, null, 1, false);
         OrderTableResponse orderTableResponse = new OrderTableResponse(orderTable);
         BDDMockito.given(tableService.create(ArgumentMatchers.any(TableRequestToCreate.class)))
@@ -102,35 +101,35 @@ class TableRestControllerTest extends UiTest {
     @Test
     void 주문_테이블의_자리_상태를_변경한다() throws Exception {
         // given
-        long orderTableId = 1L;
-        OrderTable orderTable = new OrderTable(orderTableId, null, 1, false);
+        OrderTable orderTable = new OrderTable(1L, null, 1, false);
         OrderTableResponse orderTableResponse = new OrderTableResponse(orderTable);
         BDDMockito.given(
                 tableService.changeEmpty(
-                        ArgumentMatchers.eq(orderTableId),
+                        ArgumentMatchers.eq(1L),
                         ArgumentMatchers.any(TableRequestToChangeEmpty.class)
                 )
         ).willReturn(orderTableResponse);
-        String serializedContent = getObjectMapper().writeValueAsString(orderTableResponse);
 
         // when
+        String serializedRequest = getObjectMapper().writeValueAsString(new TableRequestToChangeEmpty(false));
         ResultActions resultActions = mockMvc.perform(
                 MockMvcRequestBuilders.put("/api/tables/1/empty")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(serializedContent)
+                        .content(serializedRequest)
         );
 
         // then
+        String serializedResponse = getObjectMapper().writeValueAsString(orderTableResponse);
         assertAll(
                 () -> resultActions.andExpect(
                         ResultMatcher.matchAll(
                                 MockMvcResultMatchers.status().isOk(),
-                                MockMvcResultMatchers.content().string(serializedContent)
+                                MockMvcResultMatchers.content().string(serializedResponse)
                         )
                 ),
                 () -> BDDMockito.verify(tableService)
                         .changeEmpty(
-                                ArgumentMatchers.eq(orderTableId),
+                                ArgumentMatchers.eq(1L),
                                 ArgumentMatchers.any(TableRequestToChangeEmpty.class)
                         )
         );
@@ -139,22 +138,21 @@ class TableRestControllerTest extends UiTest {
     @Test
     void 주문_테이블의_손님_수를_변경한다() throws Exception {
         // given
-        long orderTableId = 1L;
-        OrderTable orderTable = new OrderTable(orderTableId, null, 1, false);
+        OrderTable orderTable = new OrderTable(1L, null, 1, false);
         OrderTableResponse orderTableResponse = new OrderTableResponse(orderTable);
         BDDMockito.given(tableService.changeNumberOfGuests(
-                        ArgumentMatchers.eq(orderTableId),
+                        ArgumentMatchers.eq(1L),
                         ArgumentMatchers.any(TableRequestToChangeNumberOfGuests.class)
                 )
         ).willReturn(orderTableResponse);
 
         // when
         TableRequestToChangeNumberOfGuests tableRequest = new TableRequestToChangeNumberOfGuests(1);
-        String serializedRequestContent = getObjectMapper().writeValueAsString(tableRequest);
+        String serializedRequest = getObjectMapper().writeValueAsString(tableRequest);
         ResultActions resultActions = mockMvc.perform(
                 MockMvcRequestBuilders.put("/api/tables/1/number-of-guests")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(serializedRequestContent)
+                        .content(serializedRequest)
         );
 
         // then
@@ -168,7 +166,7 @@ class TableRestControllerTest extends UiTest {
                 ),
                 () -> BDDMockito.verify(tableService)
                         .changeNumberOfGuests(
-                                ArgumentMatchers.eq(orderTableId),
+                                ArgumentMatchers.eq(1L),
                                 ArgumentMatchers.any(TableRequestToChangeNumberOfGuests.class)
                         )
         );

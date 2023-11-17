@@ -11,7 +11,6 @@ public class TableGroupResponse {
     private LocalDateTime createdDate;
     private List<OrderTableResponse> orderTables;
 
-
     private TableGroupResponse() {
     }
 
@@ -26,6 +25,10 @@ public class TableGroupResponse {
 
     public Long getId() {
         return this.id;
+    }
+
+    public LocalDateTime getCreatedDate() {
+        return this.createdDate;
     }
 
     public List<OrderTableResponse> getOrderTables() {

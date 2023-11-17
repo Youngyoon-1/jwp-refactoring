@@ -19,7 +19,7 @@ public class OrderLineItemResponse {
         this.quantity = orderLineItem.getQuantity();
     }
 
-    public Long getId() {
+    public Long getSeq() {
         return this.seq;
     }
 

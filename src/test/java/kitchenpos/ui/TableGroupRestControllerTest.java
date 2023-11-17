@@ -44,8 +44,8 @@ class TableGroupRestControllerTest extends UiTest {
     @Test
     void 테이블_그룹을_생성한다() throws Exception {
         // given
-        OrderTable savedOrderTable1 = new OrderTable(1L, 1L, 0, false);
-        OrderTable savedOrderTable2 = new OrderTable(2L, 1L, 0, false);
+        OrderTable savedOrderTable1 = new OrderTable(1L, 1L, 1, false);
+        OrderTable savedOrderTable2 = new OrderTable(2L, 1L, 1, false);
         List<OrderTable> savedOrderTables = Arrays.asList(savedOrderTable1, savedOrderTable2);
         TableGroup savedTableGroup = new TableGroup(1L, LocalDateTime.now(), savedOrderTables);
         TableGroupResponse tableGroupResponse = new TableGroupResponse(savedTableGroup);
@@ -54,21 +54,21 @@ class TableGroupRestControllerTest extends UiTest {
 
         // when
         TableGroupRequest tableGroupRequest = new TableGroupRequest(null);
-        String serializedRequestContent = getObjectMapper().writeValueAsString(tableGroupRequest);
+        String serializedRequest = getObjectMapper().writeValueAsString(tableGroupRequest);
         ResultActions resultActions = mockMvc.perform(
                 MockMvcRequestBuilders.post("/api/table-groups")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(serializedRequestContent)
+                        .content(serializedRequest)
         );
 
         // then
-        String serializedResponseContent = getObjectMapper().writeValueAsString(tableGroupResponse);
+        String serializedResponse = getObjectMapper().writeValueAsString(tableGroupResponse);
         assertAll(
                 () -> resultActions.andExpect(
                         ResultMatcher.matchAll(
                                 MockMvcResultMatchers.status().isCreated(),
                                 MockMvcResultMatchers.header().string("location", "/api/table-groups/1"),
-                                MockMvcResultMatchers.content().string(serializedResponseContent)
+                                MockMvcResultMatchers.content().string(serializedResponse)
                         )
                 ),
                 () -> BDDMockito.verify(tableGroupService).create(ArgumentMatchers.any(TableGroupRequest.class))
@@ -78,10 +78,10 @@ class TableGroupRestControllerTest extends UiTest {
     @Test
     void 테이블_그룹을_삭제한다() throws Exception {
         // given
-        long request = 1L;
+        long tableGroupId = 1L;
         BDDMockito.willDoNothing()
                 .given(tableGroupService)
-                .ungroup(request);
+                .ungroup(tableGroupId);
 
         // when
         ResultActions resultActions = mockMvc.perform(
@@ -93,7 +93,7 @@ class TableGroupRestControllerTest extends UiTest {
                 () -> resultActions.andExpect(
                         MockMvcResultMatchers.status().isNoContent()
                 ),
-                () -> BDDMockito.verify(tableGroupService).ungroup(request)
+                () -> BDDMockito.verify(tableGroupService).ungroup(tableGroupId)
         );
     }
 }

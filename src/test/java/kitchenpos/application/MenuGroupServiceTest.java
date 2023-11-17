@@ -1,18 +1,20 @@
 package kitchenpos.application;
 
-import static kitchenpos.support.fixture.MenuGroupFixture.MENU_GROUP_1;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import java.util.Collections;
 import java.util.List;
-import kitchenpos.dao.MenuGroupDao;
 import kitchenpos.domain.MenuGroup;
+import kitchenpos.domain.MenuGroupRepository;
 import kitchenpos.dto.request.MenuGroupRequest;
+import kitchenpos.dto.response.MenuGroupResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
+import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MenuGroupServiceTest {
 
     @Mock
-    private MenuGroupDao menuGroupDao;
+    private MenuGroupRepository menuGroupRepository;
 
     @InjectMocks
     private MenuGroupService menuGroupService;
@@ -29,30 +31,44 @@ class MenuGroupServiceTest {
     @Test
     void 메뉴_그룹을_생성한다() {
         // given
-        MenuGroupRequest menuGroupRequest = new MenuGroupRequest("메뉴그룹1");
-        MenuGroup willReturnValue = MENU_GROUP_1.생성(1L);
-        given(menuGroupDao.save(any(MenuGroup.class)))
-                .willReturn(willReturnValue);
+        MenuGroup savedMeuGroup = new MenuGroup(1L, "메뉴그룹이름");
+        given(menuGroupRepository.save(any(MenuGroup.class)))
+                .willReturn(savedMeuGroup);
 
         // when
-        menuGroupService.create(menuGroupRequest);
+        MenuGroupRequest menuGroupRequest = new MenuGroupRequest("메뉴그룹이름");
+        MenuGroupResponse menuGroupResponse = menuGroupService.create(menuGroupRequest);
 
         // then
-        verify(menuGroupDao).save(ArgumentMatchers.any(MenuGroup.class));
+        long actualMenuGroupId = menuGroupResponse.getId();
+        String actualMenuGroupName = menuGroupResponse.getName();
+        assertAll(
+                () -> BDDMockito.verify(menuGroupRepository).save(ArgumentMatchers.any(MenuGroup.class)),
+                () -> assertThat(actualMenuGroupId).isEqualTo(1L),
+                () -> assertThat(actualMenuGroupName).isEqualTo("메뉴그룹이름")
+        );
     }
 
     @Test
     void 메뉴_그룹_전체를_조회한다() {
         // given
-        MenuGroup menuGroup = MENU_GROUP_1.생성(1L);
+        MenuGroup menuGroup = new MenuGroup(1L, "메뉴그룹이름");
         List<MenuGroup> menuGroups = Collections.singletonList(menuGroup);
-        given(menuGroupDao.findAll())
+        given(menuGroupRepository.findAll())
                 .willReturn(menuGroups);
 
         // when
-        menuGroupService.list();
+        List<MenuGroupResponse> menuGroupResponses = menuGroupService.list();
 
         // then
-        verify(menuGroupDao).findAll();
+        MenuGroupResponse menuGroupResponse = menuGroupResponses.get(0);
+        long actualMenuGroupId = menuGroupResponse.getId();
+        String actualMenuGroupName = menuGroupResponse.getName();
+        assertAll(
+                () -> BDDMockito.verify(menuGroupRepository).findAll(),
+                () -> assertThat(menuGroupResponses.size()).isOne(),
+                () -> assertThat(actualMenuGroupId).isEqualTo(1L),
+                () -> assertThat(actualMenuGroupName).isEqualTo("메뉴그룹이름")
+        );
     }
 }
